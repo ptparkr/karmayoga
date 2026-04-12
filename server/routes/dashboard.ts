@@ -1,20 +1,38 @@
 import { Router, Request, Response } from 'express';
-import db from '../db';
+import { getDb } from '../db';
 
 const router = Router();
 
-interface HabitRow { id: string; name: string; area: string }
-interface CheckinRow { date: string }
-interface AreaRow { area: string; total: number; checked: number }
-interface ConsistencyRow { total_habits: number; total_checkins: number }
+function queryAll(sql: string, params: any[] = []): any[] {
+  const db = getDb();
+  const stmt = db.prepare(sql);
+  if (params.length) stmt.bind(params);
+  const rows: any[] = [];
+  while (stmt.step()) {
+    rows.push(stmt.getAsObject());
+  }
+  stmt.free();
+  return rows;
+}
+
+function queryOne(sql: string, params: any[] = []): any | null {
+  const db = getDb();
+  const stmt = db.prepare(sql);
+  if (params.length) stmt.bind(params);
+  let row = null;
+  if (stmt.step()) {
+    row = stmt.getAsObject();
+  }
+  stmt.free();
+  return row;
+}
 
 function computeCurrentStreak(dates: string[]): number {
   if (dates.length === 0) return 0;
-  const sorted = [...dates].sort((a, b) => b.localeCompare(a)); // descending
+  const sorted = [...dates].sort((a, b) => b.localeCompare(a));
   const today = new Date().toISOString().split('T')[0];
   const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
 
-  // Streak must include today or yesterday
   if (sorted[0] !== today && sorted[0] !== yesterday) return 0;
 
   let streak = 1;
@@ -22,7 +40,7 @@ function computeCurrentStreak(dates: string[]): number {
     const prev = new Date(sorted[i - 1]);
     const curr = new Date(sorted[i]);
     const diff = (prev.getTime() - curr.getTime()) / 86400000;
-    if (diff === 1) {
+    if (Math.round(diff) === 1) {
       streak++;
     } else {
       break;
@@ -40,7 +58,7 @@ function computeLongestStreak(dates: string[]): number {
     const prev = new Date(sorted[i - 1]);
     const curr = new Date(sorted[i]);
     const diff = (curr.getTime() - prev.getTime()) / 86400000;
-    if (diff === 1) {
+    if (Math.round(diff) === 1) {
       current++;
       if (current > longest) longest = current;
     } else if (diff > 1) {
@@ -50,12 +68,12 @@ function computeLongestStreak(dates: string[]): number {
   return longest;
 }
 
-// GET /api/dashboard/streaks — current & longest streak per habit
+// GET /api/dashboard/streaks
 router.get('/streaks', (_req: Request, res: Response) => {
-  const habits = db.prepare('SELECT id, name, area FROM habits').all() as HabitRow[];
+  const habits = queryAll('SELECT id, name, area FROM habits');
   const streaks = habits.map(h => {
-    const rows = db.prepare('SELECT date FROM checkins WHERE habit_id = ? ORDER BY date').all(h.id) as CheckinRow[];
-    const dates = rows.map(r => r.date);
+    const rows = queryAll('SELECT date FROM checkins WHERE habit_id = ? ORDER BY date', [h.id]);
+    const dates = rows.map((r: any) => r.date);
     return {
       habitId: h.id,
       name: h.name,
@@ -68,10 +86,10 @@ router.get('/streaks', (_req: Request, res: Response) => {
   res.json(streaks);
 });
 
-// GET /api/dashboard/weekly — this week's completion matrix
+// GET /api/dashboard/weekly
 router.get('/weekly', (_req: Request, res: Response) => {
   const today = new Date();
-  const dayOfWeek = today.getDay(); // 0=Sun
+  const dayOfWeek = today.getDay();
   const monday = new Date(today);
   monday.setDate(today.getDate() - ((dayOfWeek + 6) % 7));
   const weekDates: string[] = [];
@@ -81,12 +99,13 @@ router.get('/weekly', (_req: Request, res: Response) => {
     weekDates.push(d.toISOString().split('T')[0]);
   }
 
-  const habits = db.prepare('SELECT id, name, area FROM habits').all() as HabitRow[];
+  const habits = queryAll('SELECT id, name, area FROM habits');
   const matrix = habits.map(h => {
-    const rows = db.prepare(
-      'SELECT date FROM checkins WHERE habit_id = ? AND date >= ? AND date <= ?'
-    ).all(h.id, weekDates[0], weekDates[6]) as CheckinRow[];
-    const checkedDates = new Set(rows.map(r => r.date));
+    const rows = queryAll(
+      'SELECT date FROM checkins WHERE habit_id = ? AND date >= ? AND date <= ?',
+      [h.id, weekDates[0], weekDates[6]]
+    );
+    const checkedDates = new Set(rows.map((r: any) => r.date));
     return {
       habitId: h.id,
       name: h.name,
@@ -97,20 +116,19 @@ router.get('/weekly', (_req: Request, res: Response) => {
   res.json({ weekDates, matrix });
 });
 
-// GET /api/dashboard/areas — completion % grouped by area of life
+// GET /api/dashboard/areas
 router.get('/areas', (_req: Request, res: Response) => {
-  // For each area: total possible check-ins (habits × 30 days) vs actual
   const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000).toISOString().split('T')[0];
-  const areas = db.prepare(`
+  const areas = queryAll(`
     SELECT h.area,
       COUNT(DISTINCT h.id) as total,
       COUNT(c.id) as checked
     FROM habits h
     LEFT JOIN checkins c ON c.habit_id = h.id AND c.date >= ?
     GROUP BY h.area
-  `).all(thirtyDaysAgo) as AreaRow[];
+  `, [thirtyDaysAgo]);
 
-  const result = areas.map(a => ({
+  const result = areas.map((a: any) => ({
     area: a.area,
     habitCount: a.total,
     checkins: a.checked,
@@ -120,25 +138,27 @@ router.get('/areas', (_req: Request, res: Response) => {
   res.json(result);
 });
 
-// GET /api/dashboard/consistency — overall consistency % (last 30 days)
+// GET /api/dashboard/consistency
 router.get('/consistency', (_req: Request, res: Response) => {
   const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000).toISOString().split('T')[0];
-  const row = db.prepare(`
+  const row = queryOne(`
     SELECT
       (SELECT COUNT(*) FROM habits) as total_habits,
       COUNT(*) as total_checkins
     FROM checkins
     WHERE date >= ?
-  `).get(thirtyDaysAgo) as ConsistencyRow;
+  `, [thirtyDaysAgo]);
 
-  const possible = (row.total_habits || 0) * 30;
-  const percentage = possible > 0 ? Math.round((row.total_checkins / possible) * 100) : 0;
+  const totalHabits = row?.total_habits || 0;
+  const totalCheckins = row?.total_checkins || 0;
+  const possible = totalHabits * 30;
+  const percentage = possible > 0 ? Math.round((totalCheckins / possible) * 100) : 0;
   res.json({
-    totalHabits: row.total_habits,
-    totalCheckins: row.total_checkins,
+    totalHabits,
+    totalCheckins,
     possible,
     percentage,
-    missed: possible - row.total_checkins,
+    missed: possible - totalCheckins,
   });
 });
 
