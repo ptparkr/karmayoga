@@ -46,6 +46,33 @@ export async function initDb(): Promise<Database> {
     )
   `);
 
+  db.run(`
+    CREATE TABLE IF NOT EXISTS areas (
+      name  TEXT PRIMARY KEY,
+      color TEXT NOT NULL
+    )
+  `);
+
+  // Seed default area colors if empty
+  const areaCount = db.prepare('SELECT COUNT(*) as c FROM areas');
+  areaCount.step();
+  const count = (areaCount.getAsObject() as any).c;
+  areaCount.free();
+
+  if (count === 0) {
+    const defaults = [
+      ['health', '#3fb950'],
+      ['career', '#58a6ff'],
+      ['mind', '#bc8cff'],
+      ['social', '#f0883e'],
+      ['finance', '#39d2c0'],
+    ];
+    for (const [name, color] of defaults) {
+      db.run('INSERT INTO areas (name, color) VALUES (?, ?)', [name, color]);
+    }
+    saveDb();
+  }
+
   return db;
 }
 
