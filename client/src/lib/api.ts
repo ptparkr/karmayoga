@@ -30,7 +30,13 @@ export const api = {
   logSession: (focus_min: number, break_min: number, completed: boolean, area?: string) =>
     request<any>('/pomodoro', { method: 'POST', body: JSON.stringify({ focus_min, break_min, completed, area }) }),
   getTodaySessions: () => request<any[]>('/pomodoro/today'),
-  getFocusAnalytics: () => request<any>('/pomodoro/analytics'),
+  getFocusAnalytics: (startDate?: string, endDate?: string) => {
+    const params = new URLSearchParams();
+    if (startDate) params.append('startDate', startDate);
+    if (endDate) params.append('endDate', endDate);
+    const query = params.toString() ? `?${params.toString()}` : '';
+    return request<any>(`/pomodoro/analytics${query}`);
+  },
 
   // Areas
   getAreaColors: () => request<{ name: string; color: string }[]>('/areas'),

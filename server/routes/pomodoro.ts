@@ -35,10 +35,29 @@ router.get('/today', (_req: Request, res: Response) => {
 });
 
 // GET /api/pomodoro/analytics — focus analytics
-router.get('/analytics', (_req: Request, res: Response) => {
+router.get('/analytics', (req: Request, res: Response) => {
   const db = getDb();
+  const { startDate, endDate } = req.query;
 
-  // Focus by Area (last 30 days)
+  // If date range provided, use it; otherwise default to current week
+  let rangeStart: string;
+  let rangeEnd: string;
+  let daysCount: number;
+
+  if (startDate && endDate) {
+    rangeStart = startDate as string;
+    rangeEnd = endDate as string;
+    const start = new Date(rangeStart);
+    const end = new Date(rangeEnd);
+    daysCount = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+  } else {
+    const timeInfo = getCurrentTimeInfo();
+    rangeStart = toDateStr(timeInfo.weekStart);
+    rangeEnd = toDateStr(timeInfo.weekEnd);
+    daysCount = 7;
+  }
+
+  // Focus by Area (last 30 days from rangeStart)
   const thirtyDaysAgo = getDaysAgo(30);
   const areaStmt = db.prepare(`
     SELECT area, SUM(focus_min) as total_min
@@ -53,29 +72,26 @@ router.get('/analytics', (_req: Request, res: Response) => {
   }
   areaStmt.free();
 
-  // Focus by Day (for Activity Map - current week)
-  const timeInfo = getCurrentTimeInfo();
-  const weekStart = toDateStr(timeInfo.weekStart);
-  const monday = new Date(timeInfo.weekStart);
-
+  // Focus by Day for the requested date range
   const dailyStmt = db.prepare(`
     SELECT date(created_at) as date, SUM(focus_min) as total_min
     FROM pomodoro_sessions
-    WHERE completed = 1 AND date(created_at, 'localtime') >= ?
+    WHERE completed = 1 AND date(created_at, 'localtime') >= ? AND date(created_at, 'localtime') <= ?
     GROUP BY date(created_at, 'localtime')
   `);
-  dailyStmt.bind([weekStart]);
+  dailyStmt.bind([rangeStart, rangeEnd]);
   const byDayRaw: any[] = [];
   while (dailyStmt.step()) {
     byDayRaw.push(dailyStmt.getAsObject());
   }
   dailyStmt.free();
 
-  // Ensure all 7 days are represented for the weekly view
+  // Generate all dates in range
   const weekDays: any[] = [];
-  for (let i = 0; i < 7; i++) {
-    const d = new Date(monday);
-    d.setDate(monday.getDate() + i);
+  const start = new Date(rangeStart + 'T00:00:00');
+  for (let i = 0; i < daysCount; i++) {
+    const d = new Date(start);
+    d.setDate(start.getDate() + i);
     const dStr = d.toISOString().split('T')[0];
     const match = byDayRaw.find(r => r.date === dStr);
     weekDays.push({

@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAreaColors } from '../hooks/useAreaColors';
+import { api } from '../lib/api';
 
 interface Props {
   analytics: {
@@ -11,6 +12,77 @@ interface Props {
 export function FocusActivityMap({ analytics, loading }: Props) {
   const { getColor } = useAreaColors();
   const [timeframe, setTimeframe] = useState<'daily' | 'weekly' | 'monthly' | 'yearly'>('weekly');
+  const [currentOffset, setCurrentOffset] = useState(0);
+  const [displayData, setDisplayData] = useState<{ date: string; minutes: number }[]>([]);
+
+  const getDateRange = useCallback((offset: number) => {
+    const today = new Date();
+    let start: Date;
+    let end: Date;
+    let days: number;
+
+    if (timeframe === 'daily') {
+      start = new Date(today);
+      start.setDate(start.getDate() + offset);
+      end = new Date(start);
+      days = 1;
+    } else if (timeframe === 'weekly') {
+      const dayOfWeek = today.getDay();
+      const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+      start = new Date(today);
+      start.setDate(start.getDate() + mondayOffset + (offset * 7));
+      end = new Date(start);
+      end.setDate(end.getDate() + 6);
+      days = 7;
+    } else if (timeframe === 'monthly') {
+      start = new Date(today.getFullYear(), today.getMonth() + offset, 1);
+      end = new Date(today.getFullYear(), today.getMonth() + offset + 1, 0);
+      days = end.getDate();
+    } else {
+      start = new Date(today.getFullYear() + offset, 0, 1);
+      end = new Date(today.getFullYear() + offset, 11, 31);
+      days = 366;
+    }
+
+    const formatDate = (d: Date) => d.toISOString().split('T')[0];
+    return { start: formatDate(start), end: formatDate(end), days };
+  }, [timeframe]);
+
+  const fetchData = useCallback(async (offset: number) => {
+    try {
+      const { start, end } = getDateRange(offset);
+      const data = await api.getFocusAnalytics(start, end);
+      setDisplayData(data.weekDays || []);
+    } catch (err) {
+      console.error('Failed to fetch analytics:', err);
+    }
+  }, [getDateRange]);
+
+  useEffect(() => {
+    fetchData(currentOffset);
+  }, [currentOffset, timeframe, fetchData]);
+
+  const handlePrev = () => setCurrentOffset(prev => prev - 1);
+  const handleNext = () => setCurrentOffset(prev => prev + 1);
+
+  const getDateLabel = () => {
+    if (displayData.length === 0) return '';
+    const firstDate = new Date(displayData[0].date + 'T00:00:00');
+    const lastDate = new Date(displayData[displayData.length - 1].date + 'T00:00:00');
+    
+    if (timeframe === 'daily') {
+      return firstDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    } else if (timeframe === 'weekly') {
+      if (firstDate.getMonth() === lastDate.getMonth()) {
+        return firstDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+      }
+      return `${firstDate.toLocaleDateString('en-US', { month: 'short' })} - ${lastDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}`;
+    } else if (timeframe === 'monthly') {
+      return firstDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    } else {
+      return firstDate.getFullYear().toString();
+    }
+  };
 
   if (loading || !analytics) {
     return (
@@ -23,15 +95,7 @@ export function FocusActivityMap({ analytics, loading }: Props) {
     );
   }
 
-  const { weekDays } = analytics;
-  
-  // For now, we'll use weekDays for all views but filter/repeat to show the UI switching
-  // In a real app, the backend would provide specific data for each timeframe.
   const todayLocal = new Date().getFullYear() + '-' + String(new Date().getMonth() + 1).padStart(2, '0') + '-' + String(new Date().getDate()).padStart(2, '0');
-  
-  const displayData = timeframe === 'daily' 
-    ? (weekDays.find(d => d.date === todayLocal) ? [weekDays.find(d => d.date === todayLocal)!] : (weekDays.length > 0 ? [weekDays[weekDays.length - 1]] : []))
-    : weekDays;
 
   const totalMinutes = displayData.reduce((sum, d) => sum + d.minutes, 0);
   const hours = Math.floor(totalMinutes / 60);
@@ -59,20 +123,24 @@ export function FocusActivityMap({ analytics, loading }: Props) {
           </div>
           <div className="focus-time-display">
             <span className="focus-time-val">{hours}h {minutes}m</span>
-            <span className="focus-time-range">{timeframe} VIEW · {rangeStart} {rangeEnd !== rangeStart ? `— ${rangeEnd}` : ''}</span>
+            <span className="focus-time-range">{timeframe} VIEW · {getDateLabel()}</span>
           </div>
         </div>
 
-        <div className="timeframe-toggles">
-          {(['daily', 'weekly', 'monthly', 'yearly'] as const).map((tf) => (
-            <button 
-              key={tf}
-              className={`toggle-btn ${timeframe === tf ? 'active' : ''}`}
-              onClick={() => setTimeframe(tf)}
-            >
-              {tf.toUpperCase()}
-            </button>
-          ))}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-sm)' }}>
+          <button className="toggle-btn" onClick={handlePrev}>&lt;</button>
+          <div className="timeframe-toggles">
+            {(['daily', 'weekly', 'monthly', 'yearly'] as const).map((tf) => (
+              <button 
+                key={tf}
+                className={`toggle-btn ${timeframe === tf ? 'active' : ''}`}
+                onClick={() => setTimeframe(tf)}
+              >
+                {tf.toUpperCase()}
+              </button>
+            ))}
+          </div>
+          <button className="toggle-btn" onClick={handleNext}>&gt;</button>
         </div>
       </div>
 

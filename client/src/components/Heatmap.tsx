@@ -37,20 +37,18 @@ export function Heatmap({ checkins }: Props) {
     current.setDate(current.getDate() + 1);
   }
 
-  // Month labels with smarter spacing
+  // Month labels with year
   const months: { label: string; offset: number }[] = [];
-  let lastMonth = -1;
+  let lastMonthYear = '';
   cells.forEach((cell, i) => {
-    if (i % 7 === 0) { // Only check start of weeks
-      const d = new Date(cell.date + 'T00:00:00');
-      const m = d.getMonth();
-      if (m !== lastMonth) {
-        months.push({
-          label: d.toLocaleDateString('en-US', { month: 'short' }),
-          offset: Math.floor(i / 7),
-        });
-        lastMonth = m;
-      }
+    const d = new Date(cell.date + 'T00:00:00');
+    const monthYear = `${d.getMonth()}-${d.getFullYear()}`;
+    if (monthYear !== lastMonthYear) {
+      months.push({
+        label: d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
+        offset: Math.floor(i / 7),
+      });
+      lastMonthYear = monthYear;
     }
   });
 
