@@ -4,33 +4,33 @@
    ═══════════════════════════════════════════ */
 
 :root {
-  /* Surface (Premium Glassmorphism - Dark Blue) */
-  --bg-primary: #05070a;
-  --bg-secondary: rgba(10, 25, 47, 0.4);
-  --bg-tertiary: rgba(16, 35, 65, 0.5);
-  --bg-elevated: rgba(23, 42, 80, 0.7);
-  --border: rgba(100, 200, 255, 0.1);
-  --border-light: rgba(100, 200, 255, 0.05);
-  --glass-blur: blur(20px);
+  /* Surface (Premium Glassmorphism - Deep Midnight Blue) */
+  --bg-primary: #050814;
+  --bg-secondary: rgba(13, 25, 48, 0.45);
+  --bg-tertiary: rgba(20, 36, 62, 0.55);
+  --bg-elevated: rgba(28, 46, 82, 0.75);
+  --border: rgba(0, 255, 204, 0.08);
+  --border-light: rgba(0, 255, 204, 0.04);
+  --glass-blur: blur(24px);
 
-  /* Text & Accents (Glowing Cyan/Electric Blue) */
-  --text-primary: #f0f4f8;
+  /* Text & Accents (Electric Mint / Neon Green) */
+  --text-primary: #f0fdf4;
   --text-secondary: #94a3b8;
   --text-muted: #475569;
-  --text-accent: #00d2ff;
+  --text-accent: #00ffcc;
 
-  /* Heatmap (Blue Spectrum) */
+  /* Heatmap (Green Spectrum) */
   --heat-0: #0f172a;
-  --heat-1: #1e3a8a;
-  --heat-2: #1e40af;
-  --heat-3: #2563eb;
-  --heat-4: #00d2ff;
+  --heat-1: #064e3b;
+  --heat-2: #065f46;
+  --heat-3: #10b981;
+  --heat-4: #00ffcc;
 
   /* Semantic */
-  --accent: #00d2ff;
+  --accent: #00ffcc;
   --success: #10b981;
-  --warning: #f59e0b;
-  --danger: #ef4444;
+  --warning: #fbbf24;
+  --danger: #ff3e62;
 
   /* Spacing & Radius */
   --space-xs: 4px;
@@ -45,11 +45,11 @@
   --radius-full: 9999px;
 
   /* Premium Shadows & Glows */
-  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.4);
-  --shadow-md: 0 8px 16px rgba(0, 0, 0, 0.5);
-  --shadow-lg: 0 16px 32px rgba(0, 0, 0, 0.6);
-  --shadow-glow: 0 0 20px rgba(0, 210, 255, 0.2);
-  --shadow-glow-intense: 0 0 30px rgba(0, 210, 255, 0.35);
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.5);
+  --shadow-md: 0 8px 16px rgba(0, 0, 0, 0.6);
+  --shadow-lg: 0 16px 32px rgba(0, 0, 0, 0.7);
+  --shadow-glow: 0 0 20px rgba(0, 255, 204, 0.15);
+  --shadow-glow-intense: 0 0 30px rgba(0, 255, 204, 0.3);
 
   /* Transitions */
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
@@ -104,7 +104,7 @@ body::before {
   height: 70vh;
   top: -15%;
   left: -10%;
-  background: radial-gradient(circle, rgba(0, 210, 255, 0.12) 0%, transparent 75%);
+  background: radial-gradient(circle, rgba(0, 255, 204, 0.1) 0%, transparent 75%);
 }
 
 body::after {
@@ -112,7 +112,7 @@ body::after {
   height: 60vh;
   bottom: -15%;
   right: -10%;
-  background: radial-gradient(circle, rgba(30, 64, 175, 0.15) 0%, transparent 75%);
+  background: radial-gradient(circle, rgba(6, 78, 59, 0.15) 0%, transparent 75%);
   animation-delay: -5s;
 }
 
@@ -122,7 +122,7 @@ body::after {
   height: 55vh;
   top: 35%;
   left: 25%;
-  background: radial-gradient(circle, rgba(147, 197, 253, 0.08) 0%, transparent 75%);
+  background: radial-gradient(circle, rgba(16, 185, 129, 0.05) 0%, transparent 75%);
   animation-delay: -12s;
   animation-duration: 30s;
 }
@@ -292,10 +292,10 @@ body::after {
 }
 
 .nav-link.active {
-  background: linear-gradient(90deg, rgba(0, 210, 255, 0.1), transparent);
+  background: linear-gradient(90deg, rgba(0, 255, 204, 0.08), transparent);
   color: var(--accent);
   border-left: 2px solid var(--accent);
-  box-shadow: inset 4px 0 12px rgba(0, 210, 255, 0.05);
+  box-shadow: inset 4px 0 12px rgba(0, 255, 204, 0.03);
 }
 
 .nav-link .nav-label {
@@ -341,7 +341,7 @@ body::after {
 }
 
 .card:hover {
-  border-color: rgba(0, 210, 255, 0.3);
+  border-color: rgba(0, 255, 204, 0.25);
   box-shadow: var(--shadow-glow);
   transform: translateY(-2px);
 }
@@ -381,7 +381,7 @@ body::after {
 .stat-card:hover {
   transform: translateY(-4px);
   box-shadow: var(--shadow-glow-intense);
-  border-color: rgba(0, 210, 255, 0.4);
+  border-color: rgba(0, 255, 204, 0.35);
 }
 
 .stat-card.glow {
@@ -393,7 +393,7 @@ body::after {
   font-size: 32px;
   min-width: 48px;
   text-align: center;
-  filter: drop-shadow(0 0 8px rgba(0, 210, 255, 0.4));
+  filter: drop-shadow(0 0 10px rgba(0, 255, 204, 0.3));
 }
 
 .stat-label {
@@ -585,7 +585,7 @@ body::after {
 }
 
 .habit-card:hover {
-  border-color: rgba(0, 210, 255, 0.3);
+  border-color: rgba(0, 255, 204, 0.25);
   background: var(--bg-tertiary);
   transform: translateX(4px);
   box-shadow: var(--shadow-glow);
@@ -609,7 +609,7 @@ body::after {
 
 .habit-check:hover {
   border-color: var(--accent);
-  box-shadow: 0 0 10px rgba(0, 210, 255, 0.2);
+  box-shadow: 0 0 15px rgba(0, 255, 204, 0.2);
 }
 
 .habit-check.checked {
@@ -753,14 +753,14 @@ input[type="color"]::-moz-color-swatch {
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, var(--accent), #0072ff);
-  color: #000;
-  box-shadow: 0 4px 15px rgba(0, 210, 255, 0.3);
+  background: linear-gradient(135deg, var(--accent), #059669);
+  color: #052e16;
+  box-shadow: 0 4px 15px rgba(0, 255, 204, 0.25);
 }
 
 .btn-primary:hover {
   transform: translateY(-2px) scale(1.02);
-  box-shadow: 0 8px 25px rgba(0, 210, 255, 0.45);
+  box-shadow: 0 8px 25px rgba(0, 255, 204, 0.4);
   filter: brightness(1.1);
 }
 
@@ -782,7 +782,7 @@ input[type="color"]::-moz-color-swatch {
 }
 
 .btn-ghost.active {
-  background: rgba(0, 210, 255, 0.1);
+  background: rgba(0, 255, 204, 0.08);
   color: var(--accent);
   border-color: var(--accent);
   box-shadow: var(--shadow-glow);
