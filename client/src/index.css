@@ -1160,11 +1160,11 @@ input[type="color"]::-moz-color-swatch {
 }
 
 .section-title {
-  font-size: 12px;
-  font-weight: 600;
+  font-size: 16px;
+  font-weight: 800;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: var(--text-secondary);
+  letter-spacing: 0.05em;
+  color: var(--text-accent);
 }
 
 /* ─── Focus Activity Map ─── */
@@ -1186,17 +1186,22 @@ input[type="color"]::-moz-color-swatch {
 }
 
 .focus-time-val {
-  font-size: 32px;
-  font-weight: 700;
-  font-family: 'JetBrains Mono', monospace;
-  color: var(--text-primary);
+  font-size: 42px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  background: linear-gradient(135deg, #fff, var(--accent));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .focus-time-range {
-  font-size: 13px;
-  color: var(--text-muted);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-secondary);
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.1em;
+  opacity: 0.7;
 }
 
 .activity-legend {
@@ -1291,20 +1296,27 @@ input[type="color"]::-moz-color-swatch {
 }
 
 .area-pill {
-  padding: 6px 16px;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 600;
-  background: var(--bg-secondary);
+  padding: 8px 18px;
+  border-radius: var(--radius-full);
+  font-size: 13px;
+  font-weight: 700;
+  background: var(--bg-tertiary);
+  backdrop-filter: var(--glass-blur);
   color: var(--text-secondary);
-  border: 1px solid var(--border-subtle);
+  border: 1px solid var(--border);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all var(--duration-fast) var(--ease-out);
+}
+
+.area-pill:hover {
+  transform: translateY(-2px);
+  border-color: rgba(0, 210, 255, 0.3);
 }
 
 .area-pill.active {
   background: var(--color);
-  color: white !important;
+  color: #000 !important;
   border-color: transparent;
-  box-shadow: 0 4px 12px var(--shadow-color);
+  box-shadow: 0 0 15px var(--shadow-color);
+  transform: scale(1.05);
 }
