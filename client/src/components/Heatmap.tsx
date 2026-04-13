@@ -42,7 +42,7 @@ export function Heatmap({ checkins }: Props) {
   let lastMonth = -1;
   cells.forEach((cell, i) => {
     if (i % 7 === 0) { // Only check start of weeks
-      const d = new Date(cell.date);
+      const d = new Date(cell.date + 'T00:00:00');
       const m = d.getMonth();
       if (m !== lastMonth) {
         months.push({
@@ -57,7 +57,7 @@ export function Heatmap({ checkins }: Props) {
   const handleMouseEnter = useCallback((e: React.MouseEvent, date: string, count: number) => {
     const rect = (e.target as HTMLElement).getBoundingClientRect();
     setTooltip({
-      text: `${formatDate(date)}: ${count} check-in${count !== 1 ? 's' : ''}`,
+      text: `${formatDate(date)}: ${count} habit${count !== 1 ? 's' : ''} done`,
       x: rect.left + rect.width / 2,
       y: rect.top - 8,
       visible: true,

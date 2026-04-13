@@ -24,7 +24,7 @@ router.post('/', (req: Request, res: Response) => {
 router.get('/today', (_req: Request, res: Response) => {
   const today = toDateStr();
   const db = getDb();
-  const stmt = db.prepare("SELECT * FROM pomodoro_sessions WHERE date(created_at) = ? ORDER BY created_at DESC");
+  const stmt = db.prepare("SELECT * FROM pomodoro_sessions WHERE date(created_at, 'localtime') = ? ORDER BY created_at DESC");
   stmt.bind([today]);
   const sessions: any[] = [];
   while (stmt.step()) {
@@ -61,8 +61,8 @@ router.get('/analytics', (_req: Request, res: Response) => {
   const dailyStmt = db.prepare(`
     SELECT date(created_at) as date, SUM(focus_min) as total_min
     FROM pomodoro_sessions
-    WHERE completed = 1 AND date(created_at) >= ?
-    GROUP BY date(created_at)
+    WHERE completed = 1 AND date(created_at, 'localtime') >= ?
+    GROUP BY date(created_at, 'localtime')
   `);
   dailyStmt.bind([weekStart]);
   const byDayRaw: any[] = [];

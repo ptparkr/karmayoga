@@ -27,8 +27,10 @@ export function FocusActivityMap({ analytics, loading }: Props) {
   
   // For now, we'll use weekDays for all views but filter/repeat to show the UI switching
   // In a real app, the backend would provide specific data for each timeframe.
+  const todayLocal = new Date().getFullYear() + '-' + String(new Date().getMonth() + 1).padStart(2, '0') + '-' + String(new Date().getDate()).padStart(2, '0');
+  
   const displayData = timeframe === 'daily' 
-    ? [weekDays[new Date().getDay() === 0 ? 0 : (new Date().getDay() - 1 + 7) % 7] || weekDays[weekDays.length-1]]
+    ? (weekDays.find(d => d.date === todayLocal) ? [weekDays.find(d => d.date === todayLocal)!] : (weekDays.length > 0 ? [weekDays[weekDays.length - 1]] : []))
     : weekDays;
 
   const totalMinutes = displayData.reduce((sum, d) => sum + d.minutes, 0);
@@ -80,33 +82,69 @@ export function FocusActivityMap({ analytics, loading }: Props) {
         gridTemplateColumns: timeframe === 'daily' ? '1fr' : 'repeat(7, 1fr)',
         gap: 'var(--gap-md)'
       }}>
-        {displayData.map((day, i) => (
-          <div 
-            key={day.date} 
-            className="activity-cell" 
-            style={{ 
-              background: day.minutes > 0 ? getCellColor(day.minutes) : 'rgba(255,255,255,0.02)',
-              padding: 'var(--gap-lg)',
-              minHeight: 120,
-              borderRadius: 'var(--radius-lg)',
-              border: day.minutes > 0 ? '1px solid rgba(0, 255, 204, 0.1)' : '1px solid var(--border)',
-              boxShadow: day.minutes >= 240 ? '0 0 20px rgba(0, 255, 204, 0.1)' : 'none',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '4px',
-              transition: 'all 0.4s var(--ease-out)'
-            }}
-          >
-            <div className="cell-day" style={{ fontSize: 14, fontWeight: 700, opacity: 0.6 }}>
-              {timeframe === 'daily' ? 'Today' : dayNames[i]}
+        {displayData.map((day, i) => {
+          if (!day) return null;
+          const d = new Date(day.date + 'T00:00:00'); // Force local interpretation
+          const isToday = day.date === todayLocal;
+          const dayName = d.toLocaleDateString('en-US', { weekday: 'short' });
+          const dateNum = d.getDate();
+          const monthName = d.toLocaleDateString('en-US', { month: 'short' });
+
+          return (
+            <div 
+              key={day.date} 
+              className={`activity-cell ${isToday ? 'today' : ''}`}
+              style={{ 
+                background: day.minutes > 0 ? getCellColor(day.minutes) : 'rgba(255,255,255,0.02)',
+                padding: 'var(--gap-md)',
+                minHeight: timeframe === 'daily' ? 140 : 100,
+                borderRadius: 'var(--radius-lg)',
+                border: isToday ? '2px solid var(--accent)' : (day.minutes > 0 ? '1px solid rgba(0, 255, 204, 0.1)' : '1px solid var(--border)'),
+                boxShadow: day.minutes >= 240 ? '0 0 20px rgba(0, 255, 204, 0.2)' : (isToday ? '0 0 15px var(--accent-glow)' : 'none'),
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '2px',
+                transition: 'all 0.4s var(--ease-out)',
+                position: 'relative',
+                overflow: 'hidden'
+              }}
+              title={`${dayName}, ${monthName} ${dateNum}: ${day.minutes}m focus`}
+            >
+              {isToday && (
+                <div style={{ 
+                  position: 'absolute', 
+                  top: 8, 
+                  right: 8, 
+                  width: 6, 
+                  height: 6, 
+                  borderRadius: '50%', 
+                  background: 'var(--accent)',
+                  boxShadow: '0 0 8px var(--accent)'
+                }} />
+              )}
+              <div className="cell-day-name" style={{ fontSize: 11, fontWeight: 600, opacity: 0.5, textTransform: 'uppercase' }}>
+                {dayName}
+              </div>
+              <div className="cell-date" style={{ fontSize: 16, fontWeight: 800, opacity: isToday ? 1 : 0.8 }}>
+                {dateNum}
+              </div>
+              <div className="cell-month" style={{ fontSize: 10, fontWeight: 700, opacity: 0.4, textTransform: 'uppercase' }}>
+                {monthName}
+              </div>
+              <div className="cell-mins" style={{ 
+                marginTop: '8px',
+                fontSize: 18, 
+                fontWeight: 900, 
+                color: day.minutes > 0 ? 'var(--text-primary)' : 'var(--text-muted)',
+                opacity: day.minutes > 0 ? 1 : 0.3
+              }}>
+                {day.minutes > 0 ? `${day.minutes}m` : '—'}
+              </div>
             </div>
-            <div className="cell-mins" style={{ fontSize: 24, fontWeight: 800, color: 'var(--text-primary)' }}>
-              {day.minutes > 0 ? `${day.minutes}m` : '0m'}
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
       
       <div className="activity-legend" style={{ justifyContent: 'center', marginTop: 'var(--gap-xl)' }}>

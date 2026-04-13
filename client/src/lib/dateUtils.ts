@@ -1,5 +1,8 @@
 export function toDateStr(date: Date): string {
-  return date.toISOString().split('T')[0];
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
 export function today(): string {
@@ -23,7 +26,9 @@ export function getDaysInRange(start: Date, end: Date): string[] {
 }
 
 export function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString('en-US', {
+  // Use T00:00:00 to force local date parsing for YYYY-MM-DD strings
+  const d = new Date(dateStr + 'T00:00:00');
+  return d.toLocaleDateString('en-US', {
     weekday: 'short',
     month: 'short',
     day: 'numeric',
@@ -31,5 +36,6 @@ export function formatDate(dateStr: string): string {
 }
 
 export function getWeekdayShort(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString('en-US', { weekday: 'short' });
+  const d = new Date(dateStr + 'T00:00:00');
+  return d.toLocaleDateString('en-US', { weekday: 'short' });
 }

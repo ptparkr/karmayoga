@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { nanoid } from 'nanoid';
 import { getDb, saveDb } from '../db';
+import { toDateStr } from '../utils/time';
 
 const router = Router();
 
@@ -64,7 +65,7 @@ router.delete('/:id', (req: Request, res: Response) => {
 router.post('/:id/checkin', (req: Request, res: Response) => {
   const { id } = req.params;
   const { date } = req.body;
-  const dateStr = date || new Date().toISOString().split('T')[0];
+  const dateStr = date || toDateStr();
   const db = getDb();
 
   // Check if already checked in
