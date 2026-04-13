@@ -4,13 +4,14 @@
    ═══════════════════════════════════════════ */
 
 :root {
-  /* Surface */
-  --bg-primary: #0d1117;
-  --bg-secondary: #161b22;
-  --bg-tertiary: #1c2128;
-  --bg-elevated: #21262d;
-  --border: #30363d;
-  --border-light: #21262d;
+  /* Surface (Glassmorphism) */
+  --bg-primary: #0a0c10;
+  --bg-secondary: rgba(22, 27, 34, 0.45);
+  --bg-tertiary: rgba(28, 33, 40, 0.45);
+  --bg-elevated: rgba(33, 38, 45, 0.6);
+  --border: rgba(255, 255, 255, 0.1);
+  --border-light: rgba(255, 255, 255, 0.05);
+  --glass-blur: blur(16px);
 
   /* Text */
   --text-primary: #e6edf3;
@@ -46,11 +47,11 @@
   --space-xl: 32px;
   --space-2xl: 48px;
 
-  /* Radius */
-  --radius-sm: 6px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
-  --radius-xl: 16px;
+  /* Radius (Increased for a softer look) */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
   --radius-full: 9999px;
 
   /* Shadows */
@@ -85,6 +86,11 @@ html, body, #root {
 body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   background: var(--bg-primary);
+  background-image: 
+    radial-gradient(circle at 10% 20%, rgba(57, 211, 83, 0.06) 0%, transparent 40%),
+    radial-gradient(circle at 90% 40%, rgba(88, 166, 255, 0.06) 0%, transparent 40%),
+    radial-gradient(circle at 40% 90%, rgba(188, 140, 255, 0.05) 0%, transparent 40%);
+  background-attachment: fixed;
   color: var(--text-primary);
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
@@ -125,6 +131,8 @@ body {
 .sidebar {
   width: var(--sidebar-collapsed);
   background: var(--bg-secondary);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
   border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;
@@ -244,6 +252,8 @@ body {
 
 .card {
   background: var(--bg-secondary);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   padding: var(--space-lg);
@@ -276,6 +286,8 @@ body {
 
 .stat-card {
   background: var(--bg-secondary);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   padding: var(--space-lg);
@@ -448,6 +460,8 @@ body {
   gap: var(--space-md);
   padding: var(--space-md) var(--space-lg);
   background: var(--bg-secondary);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   transition: all var(--duration-fast) var(--ease-out);
@@ -557,6 +571,8 @@ input[type="color"]::-moz-color-swatch {
 
 .input {
   background: var(--bg-secondary);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   padding: var(--space-sm) var(--space-md);
@@ -578,6 +594,8 @@ input[type="color"]::-moz-color-swatch {
 .select {
   appearance: none;
   background: var(--bg-secondary) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%238b949e' d='M6 8L1 3h10z'/%3E%3C/svg%3E") no-repeat right 12px center;
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   padding: var(--space-sm) var(--space-xl) var(--space-sm) var(--space-md);
@@ -925,6 +943,8 @@ input[type="color"]::-moz-color-swatch {
   display: flex;
   gap: var(--space-xs);
   background: var(--bg-tertiary);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
   padding: 3px;
   border-radius: var(--radius-md);
   width: fit-content;
