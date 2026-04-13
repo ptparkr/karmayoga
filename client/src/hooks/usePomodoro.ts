@@ -46,10 +46,7 @@ export function usePomodoro() {
     if (isRunning) {
       intervalRef.current = setInterval(() => {
         setRemainingSeconds(prev => {
-          if (prev <= 1) {
-            handlePhaseEnd();
-            return 0;
-          }
+          if (prev <= 1) return 0;
           return prev - 1;
         });
       }, 1000);
@@ -57,7 +54,7 @@ export function usePomodoro() {
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  }, [isRunning, phase, cycle, presetKey]);
+  }, [isRunning, presetKey]); // Simplified dependencies
 
   const handlePhaseEnd = useCallback(() => {
     setIsRunning(false);
@@ -96,6 +93,13 @@ export function usePomodoro() {
       setRemainingSeconds(secs);
     }
   }, [phase, cycle, preset]);
+
+  // Handle Phase End when timer reaches zero
+  useEffect(() => {
+    if (isRunning && remainingSeconds === 0) {
+      handlePhaseEnd();
+    }
+  }, [remainingSeconds, isRunning, handlePhaseEnd]);
 
   const selectPreset = useCallback((key: number) => {
     const p = PRESETS[key];

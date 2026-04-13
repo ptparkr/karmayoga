@@ -12,7 +12,7 @@ export function PomodoroPage() {
     todaySessions,
     selectedArea, setSelectedArea, focusAnalytics,
   } = usePomodoro();
-  const { areas } = useAreaColors();
+  const { areas, getColor } = useAreaColors();
 
   return (
     <div className="app-main">
@@ -37,19 +37,22 @@ export function PomodoroPage() {
 
         {/* Area Selector */}
         <div className="area-selector" style={{ marginTop: 24, marginBottom: -8 }}>
-          {areas.map(a => (
-            <button
-              key={a.name}
-              className={`area-pill ${selectedArea === a.name ? 'active' : ''}`}
-              style={{ 
-                '--color': a.color,
-                '--shadow-color': `${a.color}40`,
-              } as React.CSSProperties}
-              onClick={() => setSelectedArea(a.name)}
-            >
-              {a.name.charAt(0).toUpperCase() + a.name.slice(1)}
-            </button>
-          ))}
+          {areas.map(a => {
+            const color = getColor(a);
+            return (
+              <button
+                key={a}
+                className={`area-pill ${selectedArea === a ? 'active' : ''}`}
+                style={{ 
+                  '--color': color,
+                  '--shadow-color': `${color}40`,
+                } as React.CSSProperties}
+                onClick={() => setSelectedArea(a)}
+              >
+                {a.charAt(0).toUpperCase() + a.slice(1)}
+              </button>
+            );
+          })}
         </div>
 
 

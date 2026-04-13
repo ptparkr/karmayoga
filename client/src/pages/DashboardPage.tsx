@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useDashboard } from '../hooks/useDashboard';
 import { useAreaColors } from '../hooks/useAreaColors';
 import { StreakCard } from '../components/StreakCard';
