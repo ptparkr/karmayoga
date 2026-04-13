@@ -37,19 +37,20 @@ export function Heatmap({ checkins }: Props) {
     current.setDate(current.getDate() + 1);
   }
 
-  // Month labels
-  const months: { label: string; col: number }[] = [];
+  // Month labels with smarter spacing
+  const months: { label: string; offset: number }[] = [];
   let lastMonth = -1;
   cells.forEach((cell, i) => {
-    const d = new Date(cell.date);
-    const m = d.getMonth();
-    if (m !== lastMonth) {
-      const col = Math.floor(i / 7);
-      months.push({
-        label: d.toLocaleDateString('en-US', { month: 'short' }),
-        col,
-      });
-      lastMonth = m;
+    if (i % 7 === 0) { // Only check start of weeks
+      const d = new Date(cell.date);
+      const m = d.getMonth();
+      if (m !== lastMonth) {
+        months.push({
+          label: d.toLocaleDateString('en-US', { month: 'short' }),
+          offset: Math.floor(i / 7),
+        });
+        lastMonth = m;
+      }
     }
   });
 
@@ -68,17 +69,19 @@ export function Heatmap({ checkins }: Props) {
   }, []);
 
   return (
-    <div className="card">
-      <div className="card-title">Contribution Graph</div>
+    <div className="heatmap-container animate-in">
       <div className="heatmap-wrapper">
-        <div className="heatmap-months" style={{ paddingLeft: 32 }}>
+        <div className="heatmap-months">
           {months.map((m, i) => (
-            <span key={i} style={{ position: 'absolute', left: 32 + m.col * 17 }}>
+            <span key={i} style={{ 
+              gridColumnStart: m.offset + 1,
+              gridColumnEnd: 'span 4' // prevent overlap
+            }}>
               {m.label}
             </span>
           ))}
         </div>
-        <div className="heatmap-body" style={{ marginTop: 20, position: 'relative' }}>
+        <div className="heatmap-body">
           <div className="heatmap-days-label">
             <span>Mon</span>
             <span>Wed</span>

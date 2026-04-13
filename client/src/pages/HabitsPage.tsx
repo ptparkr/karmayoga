@@ -11,6 +11,7 @@ export function HabitsPage() {
   const [name, setName] = useState('');
   const [area, setArea] = useState('');
   const [viewMode, setViewMode] = useState<'all' | string>('all');
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   const [newAreaName, setNewAreaName] = useState('');
   const [newAreaColor, setNewAreaColor] = useState('#58a6ff');
@@ -83,7 +84,7 @@ export function HabitsPage() {
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 'var(--gap-lg)' }}>
         {/* Add Habit Form */}
-        <div className="card" style={{ zIndex: isDropdownOpen ? 10000 : 1 }}>
+        <div className={`card habit-mgmt-card ${isDropdownOpen ? 'has-open-dropdown' : ''}`}>
           <div className="card-title">Add Habit</div>
           <form className="add-habit-form" style={{ marginBottom: 0 }} onSubmit={handleSubmit}>
             <input
@@ -102,6 +103,7 @@ export function HabitsPage() {
               value={area}
               onChange={setArea}
               placeholder="Select Area"
+              onToggle={setIsDropdownOpen}
             />
 
             <button className="btn btn-primary" type="submit" id="add-habit-btn">+</button>
@@ -230,28 +232,30 @@ export function HabitsPage() {
 
       {/* Heatmap */}
       {habits.length > 0 && (
-        <div className="section" style={{ marginTop: 24 }}>
-          <div className="section-header">
-            <span className="section-title">Contribution Graph</span>
-            <div className="toggle-group">
-              <button
-                className={`toggle-btn ${viewMode === 'all' ? 'active' : ''}`}
-                onClick={() => setViewMode('all')}
-              >
-                All
-              </button>
-              {habits.slice(0, 5).map(h => (
+        <div className="section" style={{ marginTop: 'var(--gap-xl)' }}>
+          <div className="card">
+            <div className="section-header" style={{ marginBottom: 'var(--gap-lg)' }}>
+              <span className="card-title" style={{ marginBottom: 0 }}>Contribution Graph</span>
+              <div className="toggle-group anim-fade-in">
                 <button
-                  key={h.id}
-                  className={`toggle-btn ${viewMode === h.id ? 'active' : ''}`}
-                  onClick={() => setViewMode(h.id)}
+                  className={`toggle-btn ${viewMode === 'all' ? 'active' : ''}`}
+                  onClick={() => setViewMode('all')}
                 >
-                  {h.name.length > 8 ? h.name.slice(0, 8) + '…' : h.name}
+                  Global Activity
                 </button>
-              ))}
+                {habits.slice(0, 5).map(h => (
+                  <button
+                    key={h.id}
+                    className={`toggle-btn ${viewMode === h.id ? 'active' : ''}`}
+                    onClick={() => setViewMode(h.id)}
+                  >
+                    {h.name.length > 12 ? h.name.slice(0, 10) + '…' : h.name}
+                  </button>
+                ))}
+              </div>
             </div>
+            <Heatmap checkins={getHeatmapData()} />
           </div>
-          <Heatmap checkins={getHeatmapData()} />
         </div>
       )}
     </div>

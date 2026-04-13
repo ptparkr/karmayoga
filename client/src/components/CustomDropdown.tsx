@@ -11,11 +11,15 @@ interface CustomDropdownProps {
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
-  className?: string;
+  onToggle?: (isOpen: boolean) => void;
 }
 
-export function CustomDropdown({ options, value, onChange, placeholder = 'Select...', className = '' }: CustomDropdownProps) {
+export function CustomDropdown({ options, value, onChange, placeholder = 'Select...', className = '', onToggle }: CustomDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
+
+  useEffect(() => {
+    onToggle?.(isOpen);
+  }, [isOpen, onToggle]);
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
