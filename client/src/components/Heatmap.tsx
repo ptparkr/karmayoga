@@ -72,11 +72,13 @@ export function Heatmap({ checkins }: Props) {
   return (
     <div className="heatmap-container animate-in" style={{ position: 'relative' }}>
       <div className="heatmap-wrapper">
-        <div className="heatmap-months">
+        <div className="heatmap-months" style={{ position: 'relative', display: 'block', height: 16 }}>
           {months.map((m, i) => (
             <span key={i} style={{ 
-              gridColumnStart: m.offset + 1,
-              gridColumnEnd: 'span 4' // prevent overlap
+              position: 'absolute',
+              left: `${36 + m.offset * 14}px`,
+              whiteSpace: 'nowrap',
+              fontSize: 10
             }}>
               {m.label}
             </span>
