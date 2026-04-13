@@ -344,6 +344,7 @@ body::after {
   background: linear-gradient(to bottom right, #fff, #94a3b8);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .page-subtitle {

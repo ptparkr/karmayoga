@@ -12,6 +12,7 @@ interface CustomDropdownProps {
   onChange: (value: string) => void;
   placeholder?: string;
   onToggle?: (isOpen: boolean) => void;
+  className?: string;
 }
 
 export function CustomDropdown({ options, value, onChange, placeholder = 'Select...', className = '', onToggle }: CustomDropdownProps) {
