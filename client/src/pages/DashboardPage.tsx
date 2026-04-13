@@ -141,17 +141,19 @@ export function DashboardPage() {
             )}
           </div>
         </div>
-        <div className="card" style={{ display: 'flex', justifyContent: 'center', padding: 32 }}>
-          <PieChart segments={getPieData()} label={getPieLabel()} size={200} />
+        <div className="card" style={{ display: 'flex', justifyContent: 'center', padding: 'var(--gap-xl)' }}>
+          <PieChart segments={getPieData()} label={getPieLabel()} size={220} />
         </div>
       </div>
 
-      <FocusActivityMap analytics={focusAnalytics} />
+      <div className="section">
+        <FocusActivityMap analytics={focusAnalytics} />
+      </div>
 
       {/* Per-Habit Streaks — use colored dot instead of hardcoded emojis */}
       {streaks.length > 0 && (
         <div className="section">
-          <div className="section-title" style={{ marginBottom: 12 }}>Habit Streaks</div>
+          <div className="section-title" style={{ marginBottom: 'var(--gap-sm)' }}>Habit Streaks</div>
           <div className="stat-row">
             {streaks.map(s => (
               <div key={s.habitId} className={`stat-card ${s.currentStreak >= 7 ? 'glow' : ''}`} style={s.currentStreak >= 7 ? { 
@@ -186,7 +188,7 @@ export function DashboardPage() {
       {/* Weekly Grid — colored dots per area */}
       {weekly && weekly.matrix.length > 0 && (
         <div className="section">
-          <div className="section-title" style={{ marginBottom: 12 }}>This Week</div>
+          <div className="section-title" style={{ marginBottom: 'var(--gap-sm)' }}>This Week</div>
           <div className="card" style={{ overflowX: 'auto' }}>
             <table className="weekly-grid">
               <thead>

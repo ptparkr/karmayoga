@@ -75,7 +75,7 @@ export function HabitsPage() {
         <p className="page-subtitle">Track your daily habits across your customizable areas of life</p>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 24 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 'var(--gap-lg)' }}>
         {/* Add Habit Form */}
         <div className="card">
           <div className="card-title">Add Habit</div>
@@ -137,11 +137,11 @@ export function HabitsPage() {
           <span className="empty-text">No areas defined. Add your first area!</span>
         </div>
       ) : (
-        <div className="section" style={{ marginTop: 32 }}>
+        <div className="section" style={{ marginTop: 'var(--gap-xl)' }}>
           <div className="habit-list">
             {grouped.map(group => (
-              <div key={group.area}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, marginTop: 12 }}>
+              <div key={group.area} style={{ marginBottom: 'var(--gap-xl)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--gap-sm)', marginBottom: 'var(--gap-sm)' }}>
                   <input
                     type="color"
                     value={getColor(group.area)}
@@ -181,9 +181,9 @@ export function HabitsPage() {
                   </button>
                 </div>
                 {group.habits.length === 0 && (
-                   <div style={{ fontSize: 13, color: 'var(--text-muted)', paddingLeft: 26, fontStyle: 'italic', marginBottom: 8 }}>No habits in this area.</div>
+                   <div style={{ fontSize: 13, color: 'var(--text-muted)', paddingLeft: 26, fontStyle: 'italic', marginBottom: 'var(--gap-sm)' }}>No habits in this area.</div>
                 )}
-                <div className="habit-list">
+                <div className="habit-list" style={{ gap: 'var(--gap-sm)' }}>
                   {group.habits.map(h => (
                     <HabitCard
                       key={h.id}
