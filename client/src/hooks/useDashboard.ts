@@ -68,6 +68,15 @@ export function useDashboard() {
   const totalCurrentStreak = streaks.reduce((max, s) => Math.max(max, s.currentStreak), 0);
   const totalLongestStreak = streaks.reduce((max, s) => Math.max(max, s.longestStreak), 0);
 
+  const toggleCheckin = useCallback(async (habitId: string, date: string) => {
+    try {
+      await api.toggleCheckin(habitId, date);
+      load();
+    } catch (err) {
+      console.error('Failed to toggle checkin:', err);
+    }
+  }, [load]);
+
   return {
     streaks,
     weekly,
@@ -76,6 +85,7 @@ export function useDashboard() {
     loading,
     totalCurrentStreak,
     totalLongestStreak,
+    toggleCheckin,
     refresh: load,
   };
 }

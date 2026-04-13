@@ -8,7 +8,7 @@ import { getWeekdayShort } from '../lib/dateUtils';
 type ChartView = 'areas' | 'consistency' | 'habit';
 
 export function DashboardPage() {
-  const { streaks, weekly, areas, consistency, loading, totalCurrentStreak, totalLongestStreak } = useDashboard();
+  const { streaks, weekly, areas, consistency, loading, totalCurrentStreak, totalLongestStreak, toggleCheckin } = useDashboard();
   const { getColor } = useAreaColors();
   const [chartView, setChartView] = useState<ChartView>('areas');
   const [selectedHabit, setSelectedHabit] = useState<string>('');
@@ -167,8 +167,14 @@ export function DashboardPage() {
                     {row.days.map((day: any) => (
                       <td key={day.date}>
                         <span
+                          onClick={() => {
+                            if (day.date <= todayStr) toggleCheckin(row.habitId, day.date);
+                          }}
                           className={`weekly-dot ${day.checked ? 'done' : day.date > todayStr ? 'future' : 'missed'}`}
-                          style={day.checked ? { background: getColor(row.area), boxShadow: `0 0 8px ${getColor(row.area)}50` } : undefined}
+                          style={{
+                            cursor: day.date <= todayStr ? 'pointer' : 'default',
+                            ...(day.checked ? { background: getColor(row.area), boxShadow: `0 0 8px ${getColor(row.area)}50` } : {})
+                          }}
                         />
                       </td>
                     ))}

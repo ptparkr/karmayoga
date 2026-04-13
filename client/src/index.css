@@ -437,11 +437,11 @@ body::after {
   z-index: 2;
 }
 
-.heatmap-cell.level-0 { background: var(--heat-0); }
-.heatmap-cell.level-1 { background: var(--heat-1); }
-.heatmap-cell.level-2 { background: var(--heat-2); }
-.heatmap-cell.level-3 { background: var(--heat-3); }
-.heatmap-cell.level-4 { background: var(--heat-4); }
+.heatmap-cell.level-0, .legend-cell.level-0 { background: var(--heat-0); }
+.heatmap-cell.level-1, .legend-cell.level-1 { background: var(--heat-1); }
+.heatmap-cell.level-2, .legend-cell.level-2 { background: var(--heat-2); }
+.heatmap-cell.level-3, .legend-cell.level-3 { background: var(--heat-3); }
+.heatmap-cell.level-4, .legend-cell.level-4 { background: var(--heat-4); }
 
 .heatmap-cell.today {
   outline: 2px solid var(--heat-4);
