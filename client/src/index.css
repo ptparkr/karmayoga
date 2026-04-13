@@ -616,7 +616,7 @@ body::after {
 /* ─── Heatmap Tooltip ─── */
 
 .heatmap-tooltip {
-  position: fixed;
+  position: absolute;
   background: var(--bg-elevated);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);

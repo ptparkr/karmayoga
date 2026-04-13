@@ -55,11 +55,14 @@ export function Heatmap({ checkins }: Props) {
   });
 
   const handleMouseEnter = useCallback((e: React.MouseEvent, date: string, count: number) => {
-    const rect = (e.target as HTMLElement).getBoundingClientRect();
+    const cell = e.target as HTMLElement;
+    const rect = cell.getBoundingClientRect();
+    const containerRect = gridRef.current?.parentElement?.parentElement?.getBoundingClientRect();
+    if (!containerRect) return;
     setTooltip({
       text: `${formatDate(date)}: ${count} habit${count !== 1 ? 's' : ''} done`,
-      x: rect.left + rect.width / 2,
-      y: rect.top - 8,
+      x: rect.left - containerRect.left + rect.width / 2,
+      y: rect.top - containerRect.top - 8,
       visible: true,
     });
   }, []);
@@ -69,7 +72,7 @@ export function Heatmap({ checkins }: Props) {
   }, []);
 
   return (
-    <div className="heatmap-container animate-in">
+    <div className="heatmap-container animate-in" style={{ position: 'relative' }}>
       <div className="heatmap-wrapper">
         <div className="heatmap-months">
           {months.map((m, i) => (
