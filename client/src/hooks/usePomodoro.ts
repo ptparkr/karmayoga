@@ -17,12 +17,12 @@ const PRESETS: Record<number, Preset> = {
 };
 
 export function usePomodoro() {
-  const [presetKey, setPresetKey] = useState<number>(25);
-  const [phase, setPhase] = useState<Phase>('idle');
-  const [remainingSeconds, setRemainingSeconds] = useState(25 * 60);
-  const [totalSeconds, setTotalSeconds] = useState(25 * 60);
-  const [isRunning, setIsRunning] = useState(false);
-  const [cycle, setCycle] = useState(1);
+  const [presetKey, setPresetKey] = useState<number>(() => Number(localStorage.getItem('pomodoro_preset')) || 25);
+  const [phase, setPhase] = useState<Phase>(() => (localStorage.getItem('pomodoro_phase') as Phase) || 'idle');
+  const [remainingSeconds, setRemainingSeconds] = useState(() => Number(localStorage.getItem('pomodoro_remaining')) || 25 * 60);
+  const [totalSeconds, setTotalSeconds] = useState(() => Number(localStorage.getItem('pomodoro_total')) || 25 * 60);
+  const [isRunning, setIsRunning] = useState(() => localStorage.getItem('pomodoro_running') === 'true');
+  const [cycle, setCycle] = useState(() => Number(localStorage.getItem('pomodoro_cycle')) || 1);
   const [todaySessions, setTodaySessions] = useState<any[]>([]);
   const [selectedArea, setSelectedArea] = useState<string>(() => localStorage.getItem('pomodoro_area') || 'mind');
   const [focusAnalytics, setFocusAnalytics] = useState<any>(null);
@@ -36,10 +36,16 @@ export function usePomodoro() {
     api.getFocusAnalytics().then(setFocusAnalytics).catch(console.error);
   }, []);
 
-  // Update localStorage when area changes
+  // Persistence Sync
   useEffect(() => {
+    localStorage.setItem('pomodoro_preset', String(presetKey));
+    localStorage.setItem('pomodoro_phase', phase);
+    localStorage.setItem('pomodoro_remaining', String(remainingSeconds));
+    localStorage.setItem('pomodoro_total', String(totalSeconds));
+    localStorage.setItem('pomodoro_running', String(isRunning));
+    localStorage.setItem('pomodoro_cycle', String(cycle));
     localStorage.setItem('pomodoro_area', selectedArea);
-  }, [selectedArea]);
+  }, [presetKey, phase, remainingSeconds, totalSeconds, isRunning, cycle, selectedArea]);
 
   // Timer tick
   useEffect(() => {
