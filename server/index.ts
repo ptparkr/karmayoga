@@ -5,6 +5,7 @@ import habitsRouter from './routes/habits';
 import dashboardRouter from './routes/dashboard';
 import pomodoroRouter from './routes/pomodoro';
 import areasRouter from './routes/areas';
+import utilsRouter from './routes/utils';
 
 const app = express();
 const PORT = 3001;
@@ -16,6 +17,7 @@ app.use('/api/habits', habitsRouter);
 app.use('/api/dashboard', dashboardRouter);
 app.use('/api/pomodoro', pomodoroRouter);
 app.use('/api/areas', areasRouter);
+app.use('/api/utils', utilsRouter);
 
 async function start() {
   await initDb();

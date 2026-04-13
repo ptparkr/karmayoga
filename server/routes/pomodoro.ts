@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { getDb, saveDb } from '../db';
+import { toDateStr, getDaysAgo, getCurrentTimeInfo } from '../utils/time';
 
 const router = Router();
 
@@ -21,7 +22,7 @@ router.post('/', (req: Request, res: Response) => {
 
 // GET /api/pomodoro/today — sessions completed today
 router.get('/today', (_req: Request, res: Response) => {
-  const today = new Date().toISOString().split('T')[0];
+  const today = toDateStr();
   const db = getDb();
   const stmt = db.prepare("SELECT * FROM pomodoro_sessions WHERE date(created_at) = ? ORDER BY created_at DESC");
   stmt.bind([today]);
@@ -38,7 +39,7 @@ router.get('/analytics', (_req: Request, res: Response) => {
   const db = getDb();
 
   // Focus by Area (last 30 days)
-  const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000).toISOString().split('T')[0];
+  const thirtyDaysAgo = getDaysAgo(30);
   const areaStmt = db.prepare(`
     SELECT area, SUM(focus_min) as total_min
     FROM pomodoro_sessions
@@ -53,12 +54,9 @@ router.get('/analytics', (_req: Request, res: Response) => {
   areaStmt.free();
 
   // Focus by Day (for Activity Map - current week)
-  const today = new Date();
-  const dayOfWeek = today.getDay();
-  const monday = new Date(today);
-  monday.setDate(today.getDate() - ((dayOfWeek + 6) % 7));
-  monday.setHours(0, 0, 0, 0);
-  const weekStart = monday.toISOString().split('T')[0];
+  const timeInfo = getCurrentTimeInfo();
+  const weekStart = toDateStr(timeInfo.weekStart);
+  const monday = new Date(timeInfo.weekStart);
 
   const dailyStmt = db.prepare(`
     SELECT date(created_at) as date, SUM(focus_min) as total_min

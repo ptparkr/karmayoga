@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { getDb } from '../db';
+import { toDateStr, getDaysAgo, getCurrentTimeInfo } from '../utils/time';
 
 const router = Router();
 
@@ -30,8 +31,8 @@ function queryOne(sql: string, params: any[] = []): any | null {
 function computeCurrentStreak(dates: string[]): number {
   if (dates.length === 0) return 0;
   const sorted = [...dates].sort((a, b) => b.localeCompare(a));
-  const today = new Date().toISOString().split('T')[0];
-  const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+  const today = toDateStr();
+  const yesterday = getDaysAgo(1);
 
   if (sorted[0] !== today && sorted[0] !== yesterday) return 0;
 
@@ -88,15 +89,13 @@ router.get('/streaks', (_req: Request, res: Response) => {
 
 // GET /api/dashboard/weekly
 router.get('/weekly', (_req: Request, res: Response) => {
-  const today = new Date();
-  const dayOfWeek = today.getDay();
-  const monday = new Date(today);
-  monday.setDate(today.getDate() - ((dayOfWeek + 6) % 7));
+  const timeInfo = getCurrentTimeInfo();
   const weekDates: string[] = [];
+  const monday = new Date(timeInfo.weekStart);
   for (let i = 0; i < 7; i++) {
     const d = new Date(monday);
     d.setDate(monday.getDate() + i);
-    weekDates.push(d.toISOString().split('T')[0]);
+    weekDates.push(toDateStr(d));
   }
 
   const habits = queryAll('SELECT id, name, area FROM habits');
@@ -118,7 +117,7 @@ router.get('/weekly', (_req: Request, res: Response) => {
 
 // GET /api/dashboard/areas
 router.get('/areas', (_req: Request, res: Response) => {
-  const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000).toISOString().split('T')[0];
+  const thirtyDaysAgo = getDaysAgo(30);
   const areas = queryAll(`
     SELECT h.area,
       COUNT(DISTINCT h.id) as total,
@@ -140,7 +139,7 @@ router.get('/areas', (_req: Request, res: Response) => {
 
 // GET /api/dashboard/consistency
 router.get('/consistency', (_req: Request, res: Response) => {
-  const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000).toISOString().split('T')[0];
+  const thirtyDaysAgo = getDaysAgo(30);
   const row = queryOne(`
     SELECT
       (SELECT COUNT(*) FROM habits) as total_habits,
