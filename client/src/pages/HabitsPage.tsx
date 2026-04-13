@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useHabits } from '../hooks/useHabits';
 import { useAreaColors } from '../hooks/useAreaColors';
 import { HabitCard } from '../components/HabitCard';
@@ -13,6 +13,23 @@ export function HabitsPage() {
 
   const [newAreaName, setNewAreaName] = useState('');
   const [newAreaColor, setNewAreaColor] = useState('#58a6ff');
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const premiumPresets = [
+    '#00ffcc', '#10b981', '#3b82f6', '#8b5cf6', '#ec4899',
+    '#f43f5e', '#f59e0b', '#14b8a6', '#6366f1', '#a855f7'
+  ];
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // Set default selected area when areas load
   useEffect(() => {
@@ -89,11 +106,34 @@ export function HabitsPage() {
               style={{ flex: 1 }}
               id="habit-name-input"
             />
-            <select className="select" value={area} onChange={e => setArea(e.target.value)} id="habit-area-select">
-              {areas.map(a => (
-                <option key={a} value={a}>{a.charAt(0).toUpperCase() + a.slice(1)}</option>
-              ))}
-            </select>
+            
+            {/* Custom Dropdown */}
+            <div className="dropdown-container" ref={dropdownRef}>
+              <div 
+                className={`custom-select-trigger ${isDropdownOpen ? 'active' : ''}`}
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+              >
+                {area ? (area.charAt(0).toUpperCase() + area.slice(1)) : 'Select Area'}
+              </div>
+              {isDropdownOpen && (
+                <div className="dropdown-menu">
+                  {areas.map(a => (
+                    <div 
+                      key={a} 
+                      className={`dropdown-item ${area === a ? 'selected' : ''}`}
+                      onClick={() => {
+                        setArea(a);
+                        setIsDropdownOpen(false);
+                      }}
+                    >
+                      <div style={{ width: 8, height: 8, borderRadius: '50%', background: getColor(a) }} />
+                      {a.charAt(0).toUpperCase() + a.slice(1)}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
             <button className="btn btn-primary" type="submit" id="add-habit-btn">+</button>
           </form>
         </div>
@@ -110,21 +150,37 @@ export function HabitsPage() {
               onChange={e => setNewAreaName(e.target.value)}
               style={{ flex: 1 }}
             />
-            <input
-              type="color"
-              value={newAreaColor}
-              onChange={e => setNewAreaColor(e.target.value)}
-              title="Select area color"
-              style={{
-                width: 36,
-                height: 36,
-                border: '1px solid var(--border)',
-                borderRadius: 4,
-                cursor: 'pointer',
-                background: 'var(--bg-secondary)',
-                padding: 2,
-              }}
-            />
+            
+            {/* Aesthetic Color Picker */}
+            <div className="color-picker-container">
+              <div className="preset-palette">
+                {premiumPresets.map(c => (
+                  <div 
+                    key={c}
+                    className={`color-dot ${newAreaColor === c ? 'active' : ''}`}
+                    style={{ background: c, color: c }}
+                    onClick={() => setNewAreaColor(c)}
+                  />
+                ))}
+                <div className="custom-color-trigger" style={{ position: 'relative' }}>
+                  <input
+                    type="color"
+                    value={newAreaColor}
+                    onChange={e => setNewAreaColor(e.target.value)}
+                    style={{
+                      position: 'absolute',
+                      inset: 0,
+                      opacity: 0,
+                      cursor: 'pointer',
+                      width: '100%',
+                      height: '100%'
+                    }}
+                  />
+                  <span>+</span>
+                </div>
+              </div>
+            </div>
+
             <button className="btn btn-ghost" type="submit">+</button>
           </form>
         </div>
@@ -138,7 +194,7 @@ export function HabitsPage() {
         </div>
       ) : (
         <div className="section" style={{ marginTop: 'var(--gap-xl)' }}>
-          <div className="habit-list">
+          <div className="area-grid">
             {grouped.map(group => (
               <div key={group.area} style={{ marginBottom: 'var(--gap-xl)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--gap-sm)', marginBottom: 'var(--gap-sm)' }}>
