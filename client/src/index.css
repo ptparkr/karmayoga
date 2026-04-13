@@ -362,9 +362,10 @@ body::after {
   -webkit-backdrop-filter: var(--glass-blur);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  padding: var(--space-xl);
+  padding: var(--space-md) var(--space-lg);
   transition: all var(--duration-normal) var(--ease-out);
   box-shadow: var(--shadow-sm);
+  position: relative;
 }
 
 .card:hover {
@@ -379,7 +380,7 @@ body::after {
   text-transform: uppercase;
   letter-spacing: 0.1em;
   color: var(--text-accent);
-  margin-bottom: var(--space-xl);
+  margin-bottom: var(--space-md);
   opacity: 0.9;
 }
 
@@ -747,7 +748,7 @@ input[type="color"]::-moz-color-swatch {
   -webkit-backdrop-filter: var(--glass-blur);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  padding: var(--space-sm) var(--space-md);
+  padding: 4px 12px;
   font-size: 14px;
   font-family: inherit;
   color: var(--text-primary);
@@ -770,8 +771,10 @@ input[type="color"]::-moz-color-swatch {
   -webkit-backdrop-filter: var(--glass-blur);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  padding: var(--space-sm) var(--space-xl);
-  font-size: 14px;
+  padding: 5px 8px;
+  min-width: 60px;
+  max-width: 110px;
+  font-size: 12px;
   font-family: inherit;
   color: var(--text-primary);
   outline: none;
@@ -802,7 +805,7 @@ input[type="color"]::-moz-color-swatch {
 
 .dropdown-container {
   position: relative;
-  flex: 1;
+  /* flex: 1; removed to prevent stretching */
 }
 
 .custom-select-trigger {
@@ -810,19 +813,30 @@ input[type="color"]::-moz-color-swatch {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: var(--space-sm) var(--space-xl);
+  padding: 5px 8px;
   background: var(--bg-secondary);
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   color: var(--text-primary);
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 600;
   cursor: pointer;
   transition: all var(--duration-fast) var(--ease-out);
   box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.05);
-  min-width: 140px;
+  min-width: 60px;
+  max-width: 110px;
+}
+
+.analytics-dropdown {
+  min-width: 100px;
+  max-width: 160px;
+}
+
+.analytics-dropdown .custom-select-trigger {
+  min-width: 100px;
+  max-width: 160px;
 }
 
 .custom-select-trigger:hover {
@@ -838,19 +852,19 @@ input[type="color"]::-moz-color-swatch {
 
 .dropdown-menu {
   position: absolute;
-  top: calc(100% + 8px);
+  top: calc(100% + 4px);
   left: 0;
-  width: 100%;
-  background: var(--bg-elevated);
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
+  width: max-content;
+  min-width: 100%;
+  background: rgba(8, 12, 24, 0.98);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   padding: 4px;
-  z-index: 1000;
+  z-index: 9999;
   box-shadow: var(--shadow-lg), var(--shadow-glow);
   animation: dropdown-fade-in var(--duration-fast) var(--ease-out);
-  overflow: hidden;
 }
 
 @keyframes dropdown-fade-in {
@@ -895,13 +909,13 @@ input[type="color"]::-moz-color-swatch {
 .preset-palette {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  gap: 8px;
-  margin-top: 4px;
+  gap: 6px;
+  grid-auto-rows: min-content;
 }
 
 .color-dot {
-  width: 28px;
-  height: 28px;
+  width: 24px;
+  height: 24px;
   border-radius: var(--radius-full);
   cursor: pointer;
   transition: all var(--duration-fast) var(--ease-out);
@@ -928,8 +942,8 @@ input[type="color"]::-moz-color-swatch {
 }
 
 .custom-color-trigger {
-  width: 28px;
-  height: 28px;
+  width: 24px;
+  height: 24px;
   border-radius: var(--radius-full);
   background: conic-gradient(red, yellow, lime, aqua, blue, magenta, red);
   border: 2px solid var(--border);

@@ -6,6 +6,7 @@ import { PieChart } from '../components/PieChart';
 import { getWeekdayShort } from '../lib/dateUtils';
 import { api } from '../lib/api';
 import { FocusActivityMap } from '../components/FocusActivityMap';
+import { CustomDropdown } from '../components/CustomDropdown';
 
 function hexToRgba(hex: string, alpha: number): string {
   if (!hex || hex === 'undefined') return `rgba(255, 255, 255, ${alpha})`;
@@ -127,17 +128,13 @@ export function DashboardPage() {
               <button className={`toggle-btn ${chartView === 'habit' ? 'active' : ''}`} onClick={() => setChartView('habit')}>Per Habit</button>
             </div>
             {chartView === 'habit' && (
-              <select
-                className="select"
+              <CustomDropdown 
+                options={streaks.map(s => ({ value: s.habitId, label: s.name, color: getColor(s.area) }))}
                 value={selectedHabit}
-                onChange={e => setSelectedHabit(e.target.value)}
-                style={{ fontSize: 12, padding: '4px 28px 4px 8px' }}
-              >
-                <option value="">Select...</option>
-                {streaks.map(s => (
-                  <option key={s.habitId} value={s.habitId}>{s.name}</option>
-                ))}
-              </select>
+                onChange={setSelectedHabit}
+                placeholder="Select Habit"
+                className="analytics-dropdown"
+              />
             )}
           </div>
         </div>

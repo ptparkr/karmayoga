@@ -1,8 +1,9 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useHabits } from '../hooks/useHabits';
 import { useAreaColors } from '../hooks/useAreaColors';
 import { HabitCard } from '../components/HabitCard';
 import { Heatmap } from '../components/Heatmap';
+import { CustomDropdown } from '../components/CustomDropdown';
 
 export function HabitsPage() {
   const { habits, checkins, loading, addHabit, deleteHabit, toggleCheckin, isCheckedToday, aggregateCheckins } = useHabits();
@@ -13,23 +14,11 @@ export function HabitsPage() {
 
   const [newAreaName, setNewAreaName] = useState('');
   const [newAreaColor, setNewAreaColor] = useState('#58a6ff');
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
 
   const premiumPresets = [
     '#00ffcc', '#10b981', '#3b82f6', '#8b5cf6', '#ec4899',
-    '#f43f5e', '#f59e0b', '#14b8a6', '#6366f1', '#a855f7'
+    '#f43f5e', '#f59e0b', '#14b8a6', '#6366f1'
   ];
-
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsDropdownOpen(false);
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
 
   // Set default selected area when areas load
   useEffect(() => {
@@ -94,7 +83,7 @@ export function HabitsPage() {
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 'var(--gap-lg)' }}>
         {/* Add Habit Form */}
-        <div className="card">
+        <div className="card" style={{ zIndex: isDropdownOpen ? 10000 : 1 }}>
           <div className="card-title">Add Habit</div>
           <form className="add-habit-form" style={{ marginBottom: 0 }} onSubmit={handleSubmit}>
             <input
@@ -108,31 +97,12 @@ export function HabitsPage() {
             />
             
             {/* Custom Dropdown */}
-            <div className="dropdown-container" ref={dropdownRef}>
-              <div 
-                className={`custom-select-trigger ${isDropdownOpen ? 'active' : ''}`}
-                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-              >
-                {area ? (area.charAt(0).toUpperCase() + area.slice(1)) : 'Select Area'}
-              </div>
-              {isDropdownOpen && (
-                <div className="dropdown-menu">
-                  {areas.map(a => (
-                    <div 
-                      key={a} 
-                      className={`dropdown-item ${area === a ? 'selected' : ''}`}
-                      onClick={() => {
-                        setArea(a);
-                        setIsDropdownOpen(false);
-                      }}
-                    >
-                      <div style={{ width: 8, height: 8, borderRadius: '50%', background: getColor(a) }} />
-                      {a.charAt(0).toUpperCase() + a.slice(1)}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+            <CustomDropdown 
+              options={areas.map(a => ({ value: a, label: a.charAt(0).toUpperCase() + a.slice(1), color: getColor(a) }))}
+              value={area}
+              onChange={setArea}
+              placeholder="Select Area"
+            />
 
             <button className="btn btn-primary" type="submit" id="add-habit-btn">+</button>
           </form>
