@@ -7,6 +7,14 @@ import { getWeekdayShort } from '../lib/dateUtils';
 import { api } from '../lib/api';
 import { FocusActivityMap } from '../components/FocusActivityMap';
 
+function hexToRgba(hex: string, alpha: number): string {
+  if (!hex || hex === 'undefined') return `rgba(255, 255, 255, ${alpha})`;
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
 type ChartView = 'areas' | 'consistency' | 'habit' | 'focus';
 
 export function DashboardPage() {
@@ -86,7 +94,8 @@ export function DashboardPage() {
         height: 12,
         borderRadius: '50%',
         background: color,
-        boxShadow: `0 0 6px ${color}40`,
+        boxShadow: `0 0 12px ${color}`,
+        filter: 'brightness(1.2)'
       }} />
     );
   };
@@ -145,14 +154,24 @@ export function DashboardPage() {
           <div className="section-title" style={{ marginBottom: 12 }}>Habit Streaks</div>
           <div className="stat-row">
             {streaks.map(s => (
-              <div key={s.habitId} className={`stat-card ${s.currentStreak >= 7 ? 'glow' : ''}`} style={s.currentStreak >= 7 ? { borderColor: getColor(s.area), boxShadow: `0 0 20px ${getColor(s.area)}25` } : undefined}>
+              <div key={s.habitId} className={`stat-card ${s.currentStreak >= 7 ? 'glow' : ''}`} style={s.currentStreak >= 7 ? { 
+                borderColor: getColor(s.area), 
+                boxShadow: `0 0 25px ${getColor(s.area)}30`,
+                background: `linear-gradient(135deg, ${hexToRgba(getColor(s.area), 0.1)}, rgba(10, 25, 47, 0.4))`
+              } : undefined}>
                 <span className="stat-icon" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   {areaIcon(s.area)}
                 </span>
                 <div>
                   <div className="stat-label">{s.name}</div>
                   <div style={{ display: 'flex', alignItems: 'baseline' }}>
-                    <span className="stat-value" style={{ background: `linear-gradient(135deg, ${getColor(s.area)}, ${getColor(s.area)}cc)`, backgroundClip: 'text', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                    <span className="stat-value" style={{ 
+                      background: `linear-gradient(135deg, #fff, ${getColor(s.area)})`, 
+                      backgroundClip: 'text', 
+                      WebkitBackgroundClip: 'text', 
+                      WebkitTextFillColor: 'transparent',
+                      textShadow: `0 0 20px ${getColor(s.area)}40`
+                    }}>
                       {s.currentStreak}
                     </span>
                     <span className="stat-unit">days</span>

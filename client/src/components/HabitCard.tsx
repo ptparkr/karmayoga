@@ -20,14 +20,23 @@ export function HabitCard({ name, area, areaColor, checked, onToggle, onDelete }
       <button
         className={`habit-check ${checked ? 'checked' : ''}`}
         onClick={onToggle}
-        style={checked ? { background: areaColor, borderColor: areaColor } : undefined}
+        style={checked ? { 
+          background: areaColor, 
+          borderColor: areaColor,
+          boxShadow: `0 0 15px ${areaColor}60` 
+        } : undefined}
       >
         {checked ? '✓' : ''}
       </button>
       <span className="habit-name">{name}</span>
       <span
         className="habit-area-tag"
-        style={{ color: areaColor, background: hexToRgba(areaColor, 0.1) }}
+        style={{ 
+          color: areaColor, 
+          background: hexToRgba(areaColor, 0.1),
+          border: `1px solid ${hexToRgba(areaColor, 0.2)}`,
+          boxShadow: `0 0 10px ${areaColor}20` 
+        }}
       >
         {area}
       </span>

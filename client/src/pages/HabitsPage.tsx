@@ -40,12 +40,6 @@ export function HabitsPage() {
   const handleDeleteArea = async (areaToDelete: string) => {
     if (confirm(`Delete area "${areaToDelete}" and all its habits? This cannot be undone.`)) {
       await removeArea(areaToDelete);
-      // Wait for re-render, but habits will be stale until refresh. 
-      // We should really force a refresh of habits here:
-      // We don't have the refresh function exposed in `useHabits` returned object, but it was returned as `refresh`. Let's handle it manually or let the user do it.
-      // Actually, my useHabits exposes `refresh` in Phase 5 but let's just let it be optimistic or the user reloads.
-      // Assuming useHabits exposes refresh: (I added it earlier in useHabits)
-      // We can just call window.location.reload() for simplicity on area delete to resync all habits.
       window.location.reload(); 
     }
   };
@@ -163,15 +157,27 @@ export function HabitsPage() {
                       padding: 0,
                     }}
                   />
-                  <span className="section-title" style={{ color: getColor(group.area) }}>
+                  <span className="section-title" style={{ color: getColor(group.area), textShadow: `0 0 15px ${getColor(group.area)}40` }}>
                     {group.area}
                   </span>
                   <button 
                     onClick={() => handleDeleteArea(group.area)}
-                    style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 12, marginLeft: 'auto' }}
+                    style={{ 
+                      background: 'rgba(239, 68, 68, 0.1)', 
+                      border: '1px solid rgba(239, 68, 68, 0.2)', 
+                      color: 'var(--danger)', 
+                      cursor: 'pointer', 
+                      fontSize: 10, 
+                      marginLeft: 'auto',
+                      padding: '4px 8px',
+                      borderRadius: 'var(--radius-sm)',
+                      fontWeight: 800,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.05em'
+                    }}
                     title="Delete area"
                   >
-                    🗑️
+                    Delete
                   </button>
                 </div>
                 {group.habits.length === 0 && (
