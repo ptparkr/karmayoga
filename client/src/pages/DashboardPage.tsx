@@ -15,12 +15,12 @@ function hexToRgba(hex: string, alpha: number): string {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
-type ChartView = 'areas' | 'consistency' | 'habit' | 'focus';
+type ChartView = 'focus' | 'areas' | 'consistency' | 'habit';
 
 export function DashboardPage() {
   const { streaks, weekly, areas, consistency, loading, totalCurrentStreak, totalLongestStreak, toggleCheckin } = useDashboard();
   const { getColor } = useAreaColors();
-  const [chartView, setChartView] = useState<ChartView>('areas');
+  const [chartView, setChartView] = useState<ChartView>('focus');
   const [selectedHabit, setSelectedHabit] = useState<string>('');
   const [focusAnalytics, setFocusAnalytics] = useState<any>(null);
 
@@ -121,10 +121,10 @@ export function DashboardPage() {
           <span className="section-title">Analytics</span>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
             <div className="toggle-group">
+              <button className={`toggle-btn ${chartView === 'focus' ? 'active' : ''}`} onClick={() => setChartView('focus')}>Focus</button>
               <button className={`toggle-btn ${chartView === 'areas' ? 'active' : ''}`} onClick={() => setChartView('areas')}>Areas</button>
               <button className={`toggle-btn ${chartView === 'consistency' ? 'active' : ''}`} onClick={() => setChartView('consistency')}>Overall</button>
               <button className={`toggle-btn ${chartView === 'habit' ? 'active' : ''}`} onClick={() => setChartView('habit')}>Per Habit</button>
-              <button className={`toggle-btn ${chartView === 'focus' ? 'active' : ''}`} onClick={() => setChartView('focus')}>Focus</button>
             </div>
             {chartView === 'habit' && (
               <select

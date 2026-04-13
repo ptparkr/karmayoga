@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { api } from '../lib/api';
 
-type Phase = 'idle' | 'focus' | 'short_break' | 'long_break';
+export type Phase = 'idle' | 'focus' | 'short_break' | 'long_break';
 
 interface Preset {
   focus: number;      // minutes

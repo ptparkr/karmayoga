@@ -6,7 +6,7 @@ import { useAreaColors } from '../hooks/useAreaColors';
 export function PomodoroPage() {
   const {
     presetKey, selectPreset, presets,
-    phaseLabel, sessionLabel,
+    phase, phaseLabel, sessionLabel,
     totalSeconds, remainingSeconds, isRunning,
     start, pause, reset,
     todaySessions,
@@ -61,8 +61,10 @@ export function PomodoroPage() {
           totalSeconds={totalSeconds}
           remainingSeconds={remainingSeconds}
           isRunning={isRunning}
-          phase={phaseLabel}
+          phase={phase}
+          phaseLabel={phaseLabel}
           session={sessionLabel}
+          selectedArea={selectedArea}
         />
 
         {/* Controls */}
