@@ -177,17 +177,19 @@ export function HabitsPage() {
                 {group.habits.length === 0 && (
                    <div style={{ fontSize: 13, color: 'var(--text-muted)', paddingLeft: 26, fontStyle: 'italic', marginBottom: 8 }}>No habits in this area.</div>
                 )}
-                {group.habits.map(h => (
-                  <HabitCard
-                    key={h.id}
-                    name={h.name}
-                    area={h.area}
-                    areaColor={getColor(h.area)}
-                    checked={isCheckedToday(h.id)}
-                    onToggle={() => toggleCheckin(h.id)}
-                    onDelete={() => deleteHabit(h.id)}
-                  />
-                ))}
+                <div className="habit-list">
+                  {group.habits.map(h => (
+                    <HabitCard
+                      key={h.id}
+                      name={h.name}
+                      area={h.area}
+                      areaColor={getColor(h.area)}
+                      checked={isCheckedToday(h.id)}
+                      onToggle={() => toggleCheckin(h.id)}
+                      onDelete={() => deleteHabit(h.id)}
+                    />
+                  ))}
+                </div>
               </div>
             ))}
           </div>
