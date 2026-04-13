@@ -16,22 +16,14 @@ export function PomodoroPage() {
 
   return (
     <div className="app-main">
-      <div className="page-header">
+      <div className="page-header animate-slide">
         <h1 className="page-title">Pomodoro</h1>
         <p className="page-subtitle">Deep focus sessions with structured breaks</p>
       </div>
 
-      <div className="pomodoro-container">
-        <div style={{ 
-          display: 'flex', 
-          flexDirection: 'column', 
-          alignItems: 'center', 
-          gap: 'var(--gap-xl)', 
-          maxWidth: 500, 
-          margin: '0 auto', 
-          width: '100%',
-          textAlign: 'center'
-        }}>
+      <div className="pomodoro-grid">
+        {/* Main Timer Section */}
+        <div className="pomodoro-main-area animate-in">
           {/* Presets */}
           <div className="preset-buttons">
             {presets.map(p => (
@@ -40,22 +32,35 @@ export function PomodoroPage() {
                 className={`preset-btn ${presetKey === p ? 'active' : ''}`}
                 onClick={() => selectPreset(p)}
               >
-                {p} min
+                {p}m
               </button>
             ))}
           </div>
 
+          <div className="timer-section-wrapper" style={{ position: 'relative' }}>
+            {/* Timer Ring */}
+            <TimerRing
+              totalSeconds={totalSeconds}
+              remainingSeconds={remainingSeconds}
+              isRunning={isRunning}
+              phase={phase}
+              phaseLabel={phaseLabel}
+              session={sessionLabel}
+              selectedArea={selectedArea}
+            />
+          </div>
+
           {/* Area Selector */}
-          <div className="area-selector" style={{ marginTop: 'var(--gap-sm)', marginBottom: -8 }}>
+          <div className="area-selector">
             {areas.map(a => {
               const color = getColor(a);
               return (
                 <button
                   key={a}
                   className={`area-pill ${selectedArea === a ? 'active' : ''}`}
-                  style={{ 
+                  style={{
                     '--color': color,
-                    '--shadow-color': `${color}40`,
+                    '--shadow-color': `${color}60`,
                   } as React.CSSProperties}
                   onClick={() => setSelectedArea(a)}
                 >
@@ -65,50 +70,56 @@ export function PomodoroPage() {
             })}
           </div>
 
-          {/* Timer Ring */}
-          <TimerRing
-            totalSeconds={totalSeconds}
-            remainingSeconds={remainingSeconds}
-            isRunning={isRunning}
-            phase={phase}
-            phaseLabel={phaseLabel}
-            session={sessionLabel}
-            selectedArea={selectedArea}
-          />
-
           {/* Controls */}
           <div className="timer-controls">
             <button className="timer-btn timer-btn-reset" onClick={reset} title="Reset">
-              ↺
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                <path d="M3 3v5h5" />
+              </svg>
             </button>
+            
             {isRunning ? (
               <button className="timer-btn timer-btn-pause" onClick={pause} title="Pause">
-                ❚❚
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                  <rect x="6" y="4" width="4" height="16" rx="1" />
+                  <rect x="14" y="4" width="4" height="16" rx="1" />
+                </svg>
               </button>
             ) : (
               <button className="timer-btn timer-btn-start" onClick={start} title="Start">
-                ▶
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M8 5v14l11-7z" />
+                </svg>
               </button>
             )}
           </div>
 
           {/* Break info */}
-          <div style={{ textAlign: 'center', fontSize: 13, color: 'var(--text-muted)', fontWeight: 500 }}>
-            {presetKey === 25 && '5 min short break · 10 min long break every 4 cycles'}
-            {presetKey === 50 && '10 min short break · 20 min long break every 3 cycles'}
-            {presetKey === 90 && '20 min short break · 30 min long break every 2 cycles'}
+          <div style={{ textAlign: 'center', fontSize: 12, color: 'var(--text-muted)', fontWeight: 600, letterSpacing: '0.02em', opacity: 0.8 }}>
+            {presetKey === 25 && '5 minute breaks · 15 minute long breaks'}
+            {presetKey === 50 && '10 minute breaks · 25 minute long breaks'}
+            {presetKey === 90 && '20 minute breaks · 45 minute long breaks'}
           </div>
+        </div>
+
+        {/* Info & Stats Section */}
+        <div className="pomodoro-stats-area">
+          {/* Activity Map */}
+          <FocusActivityMap analytics={focusAnalytics} />
 
           {/* Today's Sessions */}
           {todaySessions.length > 0 && (
-            <div className="pomodoro-log" style={{ marginTop: 'var(--gap-md)', width: '100%' }}>
-              <div className="section-title" style={{ marginBottom: 'var(--gap-sm)', justifyContent: 'center' }}>Today's Sessions</div>
-              <div className="card" style={{ padding: 'var(--gap-md)', background: 'rgba(255,255,255,0.02)' }}>
+            <div className="pomodoro-log animate-in" style={{ animationDelay: '0.2s' }}>
+              <div className="section-title" style={{ fontSize: 13, color: 'var(--text-accent)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 'var(--gap-md)' }}>
+                Session History
+              </div>
+              <div className="card" style={{ padding: 'var(--gap-md)', background: 'var(--bg-secondary)', border: 'none' }}>
                 {todaySessions.map((s: any, i: number) => (
                   <div key={i} className="pomodoro-log-item">
-                    <span>✅</span>
-                    <span style={{ fontWeight: 600 }}>{s.focus_min} min focus</span>
-                    <span style={{ marginLeft: 'auto', color: 'var(--text-muted)', fontSize: 11 }}>
+                    <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--accent)', boxShadow: '0 0 8px var(--accent)' }} />
+                    <span style={{ fontWeight: 700, fontSize: 14 }}>{s.focus_min} min focus session</span>
+                    <span style={{ marginLeft: 'auto', color: 'var(--text-muted)', fontSize: 12, fontWeight: 600 }}>
                       {new Date(s.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </span>
                   </div>
@@ -116,11 +127,6 @@ export function PomodoroPage() {
               </div>
             </div>
           )}
-        </div>
-
-        {/* Activity Map - Full Width */}
-        <div style={{ marginTop: 'var(--gap-xl)' }}>
-          <FocusActivityMap analytics={focusAnalytics} />
         </div>
       </div>
     </div>

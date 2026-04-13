@@ -49,53 +49,32 @@ export function FocusActivityMap({ analytics, loading }: Props) {
   const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
   return (
-    <div className="card focus-activity-card" style={{ width: '100%', maxWidth: 'none' }}>
+    <div className="card focus-activity-card animate-in" style={{ width: '100%', maxWidth: 'none', border: 'none', background: 'var(--bg-secondary)' }}>
       <div className="activity-map-header">
         <div className="activity-map-info">
-          <div className="section-title" style={{ display: 'flex', alignItems: 'center', gap: 'var(--gap-sm)' }}>
-            <span style={{ fontSize: 20 }}>📊</span> Focus Intensity
+          <div className="section-title" style={{ fontSize: 13, color: 'var(--text-accent)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+            Focus Intensity
           </div>
-          <div className="focus-time-display" style={{ margin: 'var(--gap-md) 0' }}>
+          <div className="focus-time-display">
             <span className="focus-time-val">{hours}h {minutes}m</span>
-            <span className="focus-time-range">{timeframe.toUpperCase()} VIEW: {rangeStart} {rangeEnd !== rangeStart ? `- ${rangeEnd}` : ''}</span>
-          </div>
-          <div className="activity-legend" style={{ marginTop: 'var(--gap-sm)' }}>
-            <div className="legend-item"><span className="legend-box" style={{ background: 'rgba(0, 255, 204, 0.1)' }} /> Low</div>
-            <div className="legend-item"><span className="legend-box" style={{ background: 'rgba(0, 255, 204, 0.3)' }} /> Med</div>
-            <div className="legend-item"><span className="legend-box" style={{ background: 'rgba(0, 255, 204, 0.6)' }} /> High</div>
-            <div className="legend-item"><span className="legend-box" style={{ background: 'var(--accent)' }} /> Deep</div>
+            <span className="focus-time-range">{timeframe} VIEW · {rangeStart} {rangeEnd !== rangeStart ? `— ${rangeEnd}` : ''}</span>
           </div>
         </div>
 
         <div className="timeframe-toggles">
-          <button 
-            className={`toggle-btn ${timeframe === 'daily' ? 'active' : ''}`}
-            onClick={() => setTimeframe('daily')}
-          >
-            DAILY
-          </button>
-          <button 
-            className={`toggle-btn ${timeframe === 'weekly' ? 'active' : ''}`}
-            onClick={() => setTimeframe('weekly')}
-          >
-            WEEKLY
-          </button>
-          <button 
-            className={`toggle-btn ${timeframe === 'monthly' ? 'active' : ''}`}
-            onClick={() => setTimeframe('monthly')}
-          >
-            MONTHLY
-          </button>
-          <button 
-            className={`toggle-btn ${timeframe === 'yearly' ? 'active' : ''}`}
-            onClick={() => setTimeframe('yearly')}
-          >
-            YEARLY
-          </button>
+          {(['daily', 'weekly', 'monthly', 'yearly'] as const).map((tf) => (
+            <button 
+              key={tf}
+              className={`toggle-btn ${timeframe === tf ? 'active' : ''}`}
+              onClick={() => setTimeframe(tf)}
+            >
+              {tf.toUpperCase()}
+            </button>
+          ))}
         </div>
       </div>
 
-      <div className={timeframe === 'daily' ? 'activity-grid-daily' : 'activity-grid-weekly'} style={{ 
+      <div className="activity-grid-weekly" style={{ 
         marginTop: 'var(--gap-lg)',
         display: 'grid',
         gridTemplateColumns: timeframe === 'daily' ? '1fr' : 'repeat(7, 1fr)',
@@ -106,20 +85,21 @@ export function FocusActivityMap({ analytics, loading }: Props) {
             key={day.date} 
             className="activity-cell" 
             style={{ 
-              background: getCellColor(day.minutes),
+              background: day.minutes > 0 ? getCellColor(day.minutes) : 'rgba(255,255,255,0.02)',
               padding: 'var(--gap-lg)',
               minHeight: 120,
               borderRadius: 'var(--radius-lg)',
-              border: day.minutes > 0 ? '1px solid rgba(0, 255, 204, 0.2)' : '1px solid var(--border)',
-              boxShadow: day.minutes >= 240 ? '0 0 20px rgba(0, 255, 204, 0.15)' : 'none',
+              border: day.minutes > 0 ? '1px solid rgba(0, 255, 204, 0.1)' : '1px solid var(--border)',
+              boxShadow: day.minutes >= 240 ? '0 0 20px rgba(0, 255, 204, 0.1)' : 'none',
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: '4px'
+              gap: '4px',
+              transition: 'all 0.4s var(--ease-out)'
             }}
           >
-            <div className="cell-day" style={{ fontSize: 16, color: 'var(--text-secondary)' }}>
+            <div className="cell-day" style={{ fontSize: 14, fontWeight: 700, opacity: 0.6 }}>
               {timeframe === 'daily' ? 'Today' : dayNames[i]}
             </div>
             <div className="cell-mins" style={{ fontSize: 24, fontWeight: 800, color: 'var(--text-primary)' }}>
@@ -129,18 +109,25 @@ export function FocusActivityMap({ analytics, loading }: Props) {
         ))}
       </div>
       
+      <div className="activity-legend" style={{ justifyContent: 'center', marginTop: 'var(--gap-xl)' }}>
+        <div className="legend-item"><span className="legend-box" style={{ background: 'rgba(0, 255, 204, 0.1)' }} /> Low</div>
+        <div className="legend-item"><span className="legend-box" style={{ background: 'rgba(0, 255, 204, 0.3)' }} /> Med</div>
+        <div className="legend-item"><span className="legend-box" style={{ background: 'rgba(0, 255, 204, 0.6)' }} /> High</div>
+        <div className="legend-item"><span className="legend-box" style={{ background: 'var(--accent)' }} /> Deep</div>
+      </div>
+
       {(timeframe === 'monthly' || timeframe === 'yearly') && (
         <div style={{ 
-          marginTop: 'var(--gap-md)', 
+          marginTop: 'var(--gap-lg)', 
           textAlign: 'center', 
-          fontSize: 12, 
-          color: 'var(--text-accent)',
-          background: 'rgba(0, 255, 204, 0.05)',
-          padding: '8px',
-          borderRadius: 'var(--radius-sm)',
+          fontSize: 11, 
+          color: 'var(--text-muted)',
+          background: 'rgba(255, 255, 255, 0.02)',
+          padding: '10px',
+          borderRadius: 'var(--radius-md)',
           border: '1px dashed var(--border)'
         }}>
-          💡 Long-term historical data is coming soon. Showing current weekly summary for reference.
+          💡 Historical trends for {timeframe} will appear as you build your practice.
         </div>
       )}
     </div>
