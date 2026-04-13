@@ -1,5 +1,7 @@
 import { usePomodoro } from '../hooks/usePomodoro';
 import { TimerRing } from '../components/TimerRing';
+import { FocusActivityMap } from '../components/FocusActivityMap';
+import { useAreaColors } from '../hooks/useAreaColors';
 
 export function PomodoroPage() {
   const {
@@ -8,7 +10,9 @@ export function PomodoroPage() {
     totalSeconds, remainingSeconds, isRunning,
     start, pause, reset,
     todaySessions,
+    selectedArea, setSelectedArea, focusAnalytics,
   } = usePomodoro();
+  const { areas } = useAreaColors();
 
   return (
     <div className="app-main">
@@ -30,6 +34,24 @@ export function PomodoroPage() {
             </button>
           ))}
         </div>
+
+        {/* Area Selector */}
+        <div className="area-selector" style={{ marginTop: 24, marginBottom: -8 }}>
+          {areas.map(a => (
+            <button
+              key={a.name}
+              className={`area-pill ${selectedArea === a.name ? 'active' : ''}`}
+              style={{ 
+                '--color': a.color,
+                '--shadow-color': `${a.color}40`,
+              } as React.CSSProperties}
+              onClick={() => setSelectedArea(a.name)}
+            >
+              {a.name.charAt(0).toUpperCase() + a.name.slice(1)}
+            </button>
+          ))}
+        </div>
+
 
         {/* Timer Ring */}
         <TimerRing
@@ -78,6 +100,9 @@ export function PomodoroPage() {
             ))}
           </div>
         )}
+
+        {/* Activity Map */}
+        <FocusActivityMap analytics={focusAnalytics} />
       </div>
     </div>
   );

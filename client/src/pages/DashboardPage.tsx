@@ -4,14 +4,21 @@ import { useAreaColors } from '../hooks/useAreaColors';
 import { StreakCard } from '../components/StreakCard';
 import { PieChart } from '../components/PieChart';
 import { getWeekdayShort } from '../lib/dateUtils';
+import { api } from '../lib/api';
+import { FocusActivityMap } from '../components/FocusActivityMap';
 
-type ChartView = 'areas' | 'consistency' | 'habit';
+type ChartView = 'areas' | 'consistency' | 'habit' | 'focus';
 
 export function DashboardPage() {
   const { streaks, weekly, areas, consistency, loading, totalCurrentStreak, totalLongestStreak, toggleCheckin } = useDashboard();
   const { getColor } = useAreaColors();
   const [chartView, setChartView] = useState<ChartView>('areas');
   const [selectedHabit, setSelectedHabit] = useState<string>('');
+  const [focusAnalytics, setFocusAnalytics] = useState<any>(null);
+
+  useEffect(() => {
+    api.getFocusAnalytics().then(setFocusAnalytics).catch(console.error);
+  }, []);
 
   if (loading) {
     return (
@@ -46,6 +53,13 @@ export function DashboardPage() {
         ];
       }
     }
+    if (chartView === 'focus' && focusAnalytics) {
+      return focusAnalytics.byArea.map((a: any) => ({
+        label: a.area.charAt(0).toUpperCase() + a.area.slice(1),
+        value: a.total_min,
+        color: getColor(a.area),
+      }));
+    }
     return [];
   };
 
@@ -56,6 +70,7 @@ export function DashboardPage() {
       const s = streaks.find(h => h.habitId === selectedHabit);
       return s?.name || 'Select Habit';
     }
+    if (chartView === 'focus') return 'Focus Time';
     return '';
   };
 
@@ -100,6 +115,7 @@ export function DashboardPage() {
               <button className={`toggle-btn ${chartView === 'areas' ? 'active' : ''}`} onClick={() => setChartView('areas')}>Areas</button>
               <button className={`toggle-btn ${chartView === 'consistency' ? 'active' : ''}`} onClick={() => setChartView('consistency')}>Overall</button>
               <button className={`toggle-btn ${chartView === 'habit' ? 'active' : ''}`} onClick={() => setChartView('habit')}>Per Habit</button>
+              <button className={`toggle-btn ${chartView === 'focus' ? 'active' : ''}`} onClick={() => setChartView('focus')}>Focus</button>
             </div>
             {chartView === 'habit' && (
               <select
@@ -120,6 +136,8 @@ export function DashboardPage() {
           <PieChart segments={getPieData()} label={getPieLabel()} size={200} />
         </div>
       </div>
+
+      <FocusActivityMap analytics={focusAnalytics} />
 
       {/* Per-Habit Streaks — use colored dot instead of hardcoded emojis */}
       {streaks.length > 0 && (

@@ -1083,3 +1083,145 @@ input[type="color"]::-moz-color-swatch {
   letter-spacing: 0.5px;
   color: var(--text-secondary);
 }
+
+/* ─── Focus Activity Map ─── */
+.focus-activity-card {
+  margin-top: 24px;
+}
+
+.activity-map-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 24px;
+}
+
+.focus-time-display {
+  margin: 12px 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.focus-time-val {
+  font-size: 32px;
+  font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--text-primary);
+}
+
+.focus-time-range {
+  font-size: 13px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.activity-legend {
+  display: flex;
+  gap: 12px;
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 600;
+  margin-top: 16px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.legend-box {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+}
+
+.timeframe-toggles {
+  display: flex;
+  background: var(--bg-tertiary);
+  padding: 4px;
+  border-radius: 12px;
+  gap: 4px;
+}
+
+.timeframe-toggles .toggle-btn {
+  padding: 6px 12px;
+  font-size: 10px;
+  font-weight: 700;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-muted);
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.timeframe-toggles .toggle-btn.active {
+  background: var(--accent-gradient);
+  color: white;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+}
+
+.activity-grid-weekly {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.activity-cell {
+  aspect-ratio: 16/10;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.activity-cell:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+}
+
+.cell-day {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+.cell-mins {
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.7);
+}
+
+/* ─── Area Selector Pills ─── */
+.area-selector {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.area-pill {
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-subtle);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.area-pill.active {
+  background: var(--color);
+  color: white !important;
+  border-color: transparent;
+  box-shadow: 0 4px 12px var(--shadow-color);
+}

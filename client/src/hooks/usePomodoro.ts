@@ -24,14 +24,22 @@ export function usePomodoro() {
   const [isRunning, setIsRunning] = useState(false);
   const [cycle, setCycle] = useState(1);
   const [todaySessions, setTodaySessions] = useState<any[]>([]);
+  const [selectedArea, setSelectedArea] = useState<string>(() => localStorage.getItem('pomodoro_area') || 'mind');
+  const [focusAnalytics, setFocusAnalytics] = useState<any>(null);
 
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const preset = PRESETS[presetKey];
 
-  // Load today's sessions
+  // Load today's sessions and analytics
   useEffect(() => {
     api.getTodaySessions().then(setTodaySessions).catch(console.error);
+    api.getFocusAnalytics().then(setFocusAnalytics).catch(console.error);
   }, []);
+
+  // Update localStorage when area changes
+  useEffect(() => {
+    localStorage.setItem('pomodoro_area', selectedArea);
+  }, [selectedArea]);
 
   // Timer tick
   useEffect(() => {
@@ -57,9 +65,11 @@ export function usePomodoro() {
 
     if (phase === 'focus') {
       // Log the completed focus session
-      api.logSession(preset.focus, preset.shortBreak, true)
-        .then(() => api.getTodaySessions())
-        .then(setTodaySessions)
+      api.logSession(preset.focus, preset.shortBreak, true, selectedArea)
+        .then(() => {
+          api.getTodaySessions().then(setTodaySessions);
+          api.getFocusAnalytics().then(setFocusAnalytics);
+        })
         .catch(console.error);
 
       // Determine next break
@@ -141,5 +151,8 @@ export function usePomodoro() {
     reset,
     todaySessions,
     presets: Object.keys(PRESETS).map(Number),
+    selectedArea,
+    setSelectedArea,
+    focusAnalytics,
   };
 }

@@ -27,9 +27,10 @@ export const api = {
   getConsistency: () => request<any>('/dashboard/consistency'),
 
   // Pomodoro
-  logSession: (focus_min: number, break_min: number, completed: boolean) =>
-    request<any>('/pomodoro', { method: 'POST', body: JSON.stringify({ focus_min, break_min, completed }) }),
+  logSession: (focus_min: number, break_min: number, completed: boolean, area?: string) =>
+    request<any>('/pomodoro', { method: 'POST', body: JSON.stringify({ focus_min, break_min, completed, area }) }),
   getTodaySessions: () => request<any[]>('/pomodoro/today'),
+  getFocusAnalytics: () => request<any>('/pomodoro/analytics'),
 
   // Areas
   getAreaColors: () => request<{ name: string; color: string }[]>('/areas'),
