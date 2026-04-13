@@ -169,6 +169,11 @@ body::after {
   padding: var(--page-padding);
   scrollbar-width: thin;
   scrollbar-color: var(--border) transparent;
+  transition: padding-left var(--duration-normal) var(--ease-out);
+}
+
+.is-sidebar-collapsed .app-main {
+  padding-left: 80px;
 }
 
 .app-main::-webkit-scrollbar {

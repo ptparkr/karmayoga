@@ -7,8 +7,7 @@ const links = [
   { to: '/pomodoro', label: 'Pomodoro' },
 ];
 
-export function Sidebar() {
-  const [isCollapsed, setIsCollapsed] = useState(false);
+export function Sidebar({ isCollapsed, setIsCollapsed }: { isCollapsed: boolean; setIsCollapsed: (v: boolean) => void }) {
 
   return (
     <>
@@ -29,7 +28,7 @@ export function Sidebar() {
             onClick={() => setIsCollapsed(true)}
             title="Collapse Sidebar"
           >
-            ←
+            ☰
           </button>
         </div>
         <nav className="sidebar-nav">
