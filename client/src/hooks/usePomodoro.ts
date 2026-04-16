@@ -19,13 +19,28 @@ const PRESETS: Record<number, Preset> = {
 export function usePomodoro() {
   const [presetKey, setPresetKey] = useState<number>(() => Number(localStorage.getItem('pomodoro_preset')) || 25);
   const [phase, setPhase] = useState<Phase>(() => (localStorage.getItem('pomodoro_phase') as Phase) || 'idle');
-  const [remainingSeconds, setRemainingSeconds] = useState(() => Number(localStorage.getItem('pomodoro_remaining')) || 25 * 60);
   const [totalSeconds, setTotalSeconds] = useState(() => Number(localStorage.getItem('pomodoro_total')) || 25 * 60);
   const [isRunning, setIsRunning] = useState(() => localStorage.getItem('pomodoro_running') === 'true');
   const [cycle, setCycle] = useState(() => Number(localStorage.getItem('pomodoro_cycle')) || 1);
   const [todaySessions, setTodaySessions] = useState<any[]>([]);
   const [selectedArea, setSelectedArea] = useState<string>(() => localStorage.getItem('pomodoro_area') || 'mind');
   const [focusAnalytics, setFocusAnalytics] = useState<any>(null);
+
+  const [endTime, setEndTime] = useState<number | null>(() => {
+    const saved = localStorage.getItem('pomodoro_endTime');
+    return saved ? Number(saved) : null;
+  });
+
+  const [remainingSeconds, setRemainingSeconds] = useState(() => {
+    const savedEndTime = localStorage.getItem('pomodoro_endTime');
+    const wasRunning = localStorage.getItem('pomodoro_running') === 'true';
+    
+    if (savedEndTime && wasRunning) {
+      const remaining = Math.max(0, Math.floor((Number(savedEndTime) - Date.now()) / 1000));
+      return remaining;
+    }
+    return Number(localStorage.getItem('pomodoro_remaining')) || 25 * 60;
+  });
 
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const preset = PRESETS[presetKey];
@@ -45,25 +60,29 @@ export function usePomodoro() {
     localStorage.setItem('pomodoro_running', String(isRunning));
     localStorage.setItem('pomodoro_cycle', String(cycle));
     localStorage.setItem('pomodoro_area', selectedArea);
-  }, [presetKey, phase, remainingSeconds, totalSeconds, isRunning, cycle, selectedArea]);
+    if (endTime) {
+      localStorage.setItem('pomodoro_endTime', String(endTime));
+    } else {
+      localStorage.removeItem('pomodoro_endTime');
+    }
+  }, [presetKey, phase, remainingSeconds, totalSeconds, isRunning, cycle, selectedArea, endTime]);
 
-  // Timer tick
+  // Timer tick - using timestamp-based calculation to avoid drift
   useEffect(() => {
-    if (isRunning) {
+    if (isRunning && endTime) {
       intervalRef.current = setInterval(() => {
-        setRemainingSeconds(prev => {
-          if (prev <= 1) return 0;
-          return prev - 1;
-        });
-      }, 1000);
+        const remaining = Math.max(0, Math.floor((endTime - Date.now()) / 1000));
+        setRemainingSeconds(remaining);
+      }, 100);
     }
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  }, [isRunning, presetKey]); // Simplified dependencies
+  }, [isRunning, endTime]);
 
   const handlePhaseEnd = useCallback(() => {
     setIsRunning(false);
+    setEndTime(null);
     if (intervalRef.current) clearInterval(intervalRef.current);
 
     if (phase === 'focus') {
@@ -112,6 +131,7 @@ export function usePomodoro() {
     setPresetKey(key);
     setPhase('idle');
     setIsRunning(false);
+    setEndTime(null);
     setCycle(1);
     const secs = p.focus * 60;
     setTotalSeconds(secs);
@@ -123,15 +143,23 @@ export function usePomodoro() {
     if (phase === 'idle') {
       setPhase('focus');
     }
+    const end = Date.now() + remainingSeconds * 1000;
+    setEndTime(end);
     setIsRunning(true);
-  }, [phase]);
+  }, [phase, remainingSeconds]);
 
   const pause = useCallback(() => {
+    if (endTime) {
+      const remaining = Math.max(0, Math.floor((endTime - Date.now()) / 1000));
+      setRemainingSeconds(remaining);
+      setEndTime(null);
+    }
     setIsRunning(false);
-  }, []);
+  }, [endTime]);
 
   const reset = useCallback(() => {
     setIsRunning(false);
+    setEndTime(null);
     setPhase('idle');
     setCycle(1);
     const secs = preset.focus * 60;
