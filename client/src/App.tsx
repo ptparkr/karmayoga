@@ -7,6 +7,7 @@ import { HabitsPage } from './pages/HabitsPage';
 import { PomodoroPage } from './pages/PomodoroPage';
 import { HealthPage } from './pages/HealthPage';
 import { WheelPage } from './pages/WheelPage';
+import { AnalyticsPage } from './pages/AnalyticsPage';
 
 export function App() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -22,6 +23,7 @@ export function App() {
             <Route path="/pomodoro" element={<PomodoroPage />} />
             <Route path="/health" element={<HealthPage />} />
             <Route path="/wheel" element={<WheelPage />} />
+            <Route path="/analytics" element={<AnalyticsPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </main>

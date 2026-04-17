@@ -118,7 +118,7 @@ export function WheelPage() {
             ) : (
               <div className="wheel-snapshot-list">
                 {recentSnapshots.map((snapshot) => (
-                  <div key={snapshot.id} className="wheel-snapshot-item">
+                  <div key={snapshot.date} className="wheel-snapshot-item">
                     <span className="wheel-snapshot-date">
                       {new Date(snapshot.date).toLocaleDateString('en-US', {
                         month: 'short',
