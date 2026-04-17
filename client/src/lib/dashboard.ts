@@ -90,6 +90,16 @@ export function getCountdownParts(deadline: string, nowMs: number) {
   };
 }
 
+export function getProgressRatio(target: Target): number {
+  const now = Date.now();
+  const created = new Date(target.createdAt).getTime();
+  const deadline = new Date(target.deadline).getTime();
+  const total = deadline - created;
+  if (total <= 0) return 1;
+  const elapsed = now - created;
+  return Math.min(1, Math.max(0, elapsed / total));
+}
+
 function capitalize(value: string): string {
   return value.charAt(0).toUpperCase() + value.slice(1);
 }

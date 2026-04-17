@@ -1545,6 +1545,59 @@ input[type="color"]::-moz-color-swatch {
   color: var(--text-secondary);
 }
 
+/* Progress Bar */
+.target-progress-bar {
+  position: relative;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+  margin: var(--gap-sm) 0;
+}
+
+.target-progress-fill {
+  height: 100%;
+  border-radius: var(--radius-full);
+  transition: width 1s linear;
+  box-shadow: 0 0 10px currentColor;
+}
+
+.target-progress-label {
+  position: absolute;
+  right: 0;
+  top: -18px;
+  font-size: 10px;
+  color: var(--text-muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Badge States */
+.target-badge.reached {
+  background: rgba(16, 185, 129, 0.15) !important;
+  border-color: var(--success) !important;
+  color: var(--success) !important;
+}
+
+.target-badge.expired {
+  background: rgba(255, 62, 98, 0.15) !important;
+  border-color: var(--danger) !important;
+  color: var(--danger) !important;
+}
+
+/* Small Card Enhancement */
+.target-card.small {
+  border-left: 4px solid var(--target-accent, var(--accent));
+}
+
+.target-countdown.small {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  font-size: 16px;
+}
+
 .target-complete-button {
   margin-top: var(--gap-sm);
   justify-self: start;

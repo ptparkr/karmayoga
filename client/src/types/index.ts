@@ -154,6 +154,7 @@ export interface Target {
   completed: boolean;
   createdAt: string;
   completedAt?: string | null;
+  version?: number;
 }
 
 export interface TargetDraft {

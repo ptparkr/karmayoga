@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { buildTargetSlots, getCountdownParts } from '../../lib/dashboard';
+import { buildTargetSlots, getCountdownParts, getProgressRatio } from '../../lib/dashboard';
 import type { Target, TargetDraft } from '../../types';
 
 interface Props {
@@ -201,8 +201,18 @@ interface TargetCardProps {
 
 function TargetCard({ target, nowMs, size, onEdit, onDelete, onComplete, onPrimary }: TargetCardProps) {
   const countdown = getCountdownParts(target.deadline, nowMs);
+  const progress = getProgressRatio(target);
   const label = `${String(countdown.days).padStart(2, '0')}d ${String(countdown.hours).padStart(2, '0')}h ${String(countdown.minutes).padStart(2, '0')}m ${String(countdown.seconds).padStart(2, '0')}s`;
-  const completedLabel = target.completed ? 'Reached' : countdown.expired ? 'Due now' : 'Live';
+  const completedLabel = target.completed 
+    ? 'REACHED' 
+    : countdown.expired 
+      ? 'EXPIRED' 
+      : 'Live';
+  const badgeClass = target.completed 
+    ? 'reached' 
+    : countdown.expired 
+      ? 'expired' 
+      : '';
 
   return (
     <article
@@ -211,10 +221,11 @@ function TargetCard({ target, nowMs, size, onEdit, onDelete, onComplete, onPrima
         borderColor: `${target.color}55`,
         background: `linear-gradient(160deg, ${target.color}22, rgba(10, 16, 30, 0.92))`,
         boxShadow: `0 0 30px ${target.color}18`,
+        borderLeftColor: size === 'small' ? target.color : undefined,
       }}
     >
       <div className="target-card-top">
-        <span className="target-badge" style={{ color: target.color, borderColor: `${target.color}40`, background: `${target.color}18` }}>
+        <span className={`target-badge ${badgeClass}`} style={{ color: target.color, borderColor: `${target.color}40`, background: `${target.color}18` }}>
           {completedLabel}
         </span>
         <div className="target-card-actions">
@@ -234,6 +245,17 @@ function TargetCard({ target, nowMs, size, onEdit, onDelete, onComplete, onPrima
 
       <div className="target-card-title" style={{ color: target.color }}>{target.title}</div>
       {target.description ? <p className="target-card-description">{target.description}</p> : null}
+      
+      {size === 'large' && !target.completed && (
+        <div className="target-progress-bar">
+          <div 
+            className="target-progress-fill" 
+            style={{ width: `${progress * 100}%`, background: target.color }} 
+          />
+          <span className="target-progress-label">{Math.round(progress * 100)}% elapsed</span>
+        </div>
+      )}
+      
       <div className={`target-countdown ${size}`}>{label}</div>
       <div className="target-deadline">{new Date(target.deadline).toLocaleString()}</div>
 
