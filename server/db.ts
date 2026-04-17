@@ -23,9 +23,17 @@ export async function initDb(): Promise<Database> {
       id         TEXT PRIMARY KEY,
       name       TEXT NOT NULL,
       area       TEXT NOT NULL,
-      created_at TEXT NOT NULL DEFAULT (date('now'))
+      created_at TEXT NOT NULL DEFAULT (date('now')),
+      target_days TEXT NOT NULL DEFAULT '[0,1,2,3,4,5,6]'
     )
   `);
+
+  // Migration: add target_days if missing
+  try {
+    db.run('ALTER TABLE habits ADD COLUMN target_days TEXT');
+  } catch (e) {
+    // Column likely already exists
+  }
 
   db.run(`
     CREATE TABLE IF NOT EXISTS checkins (
@@ -88,6 +96,35 @@ export async function initDb(): Promise<Database> {
     }
     saveDb();
   }
+
+  // Health tables
+  db.run(`
+    CREATE TABLE IF NOT EXISTS health_checkins (
+      id          TEXT PRIMARY KEY,
+      date        TEXT NOT NULL UNIQUE,
+      hrv         INTEGER,
+      sleep_hours REAL,
+      sleep_quality INTEGER,
+      resting_hr  INTEGER,
+      steps       INTEGER,
+      energy_level INTEGER,
+      mood_score  INTEGER,
+      notes       TEXT DEFAULT ''
+    )
+  `);
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS bio_markers (
+      id          TEXT PRIMARY KEY,
+      date        TEXT NOT NULL,
+      vo2_max     REAL,
+      grip_kg     REAL,
+      waist_cm    REAL,
+      weight_kg   REAL,
+      body_fat    REAL,
+      resting_hr_avg INTEGER
+    )
+  `);
 
   return db;
 }

@@ -72,3 +72,15 @@ export function getDaysAgo(days: number): string {
   const d = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
   return d.toISOString().split('T')[0];
 }
+
+export function addDays(date: Date | string, days: number): Date {
+  const d = typeof date === 'string' ? new Date(date) : new Date(date);
+  d.setDate(d.getDate() + days);
+  return d;
+}
+
+export function startOfDay(date: Date | string): Date {
+  const d = typeof date === 'string' ? new Date(date) : new Date(date);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}

@@ -1,17 +1,38 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useHabits } from '../hooks/useHabits';
 import { useAreaColors } from '../hooks/useAreaColors';
-import { HabitCard } from '../components/HabitCard';
+import { HabitCheckin } from '../components/HabitCheckin';
 import { Heatmap } from '../components/Heatmap';
 import { CustomDropdown } from '../components/CustomDropdown';
+import { StreakLeaderboard } from '../components/StreakLeaderboard';
+import { toDateStr, addDays } from '../lib/dateUtils';
+
+const DAY_LABELS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
 export function HabitsPage() {
-  const { habits, checkins, loading, error, addHabit, deleteHabit, toggleCheckin, isCheckedToday, aggregateCheckins, refresh } = useHabits();
+  const { 
+    habits, 
+    checkins, 
+    streaks,
+    leaderboard,
+    loading, 
+    error, 
+    addHabit, 
+    deleteHabit, 
+    toggleCheckin, 
+    isCheckedToday,
+    isScheduledToday,
+    getTargetDays,
+    aggregateCheckins, 
+    refresh 
+  } = useHabits();
   const { areas, getColor, updateColor, addArea, removeArea } = useAreaColors();
   const [name, setName] = useState('');
   const [area, setArea] = useState('');
   const [viewMode, setViewMode] = useState<'all' | string>('all');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [targetDays, setTargetDays] = useState<number[]>([0, 1, 2, 3, 4, 5, 6]);
+  const [showDaySelector, setShowDaySelector] = useState(false);
 
   const [newAreaName, setNewAreaName] = useState('');
   const [newAreaColor, setNewAreaColor] = useState('#58a6ff');
@@ -21,7 +42,6 @@ export function HabitsPage() {
     '#f43f5e', '#f59e0b', '#14b8a6', '#6366f1'
   ];
 
-  // Set default selected area when areas load
   useEffect(() => {
     if (areas.length > 0 && (!area || !areas.includes(area))) {
       setArea(areas[0]);
@@ -31,8 +51,19 @@ export function HabitsPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim() || !area) return;
-    await addHabit(name.trim(), area);
+    await addHabit(name.trim(), area, targetDays);
     setName('');
+    setTargetDays([0, 1, 2, 3, 4, 5, 6]);
+  };
+
+  const toggleDay = (day: number) => {
+    if (targetDays.includes(day)) {
+      if (targetDays.length > 1) {
+        setTargetDays(targetDays.filter(d => d !== day));
+      }
+    } else {
+      setTargetDays([...targetDays, day].sort());
+    }
   };
 
   const handleAddArea = async (e: React.FormEvent) => {
@@ -51,13 +82,60 @@ export function HabitsPage() {
     }
   };
 
-  // Group habits by area
   const grouped = areas.map(a => ({
     area: a,
     habits: habits.filter(h => h.area === a),
   })).filter(g => g.habits.length > 0 || areas.length > 0);
 
-  // Build heatmap data based on view mode
+  const areaProgress = useMemo(() => {
+    const today = new Date().getDay();
+    const result: Record<string, { scheduled: number; completed: number; percentage: number }> = {};
+    
+    for (const a of areas) {
+      const areaHabits = habits.filter(h => h.area === a);
+      let scheduled = 0;
+      let completed = 0;
+      
+      for (const h of areaHabits) {
+        const days = getTargetDays(h.id);
+        if (days.includes(today)) {
+          scheduled++;
+          if (checkins[h.id]?.has(toDateStr(new Date()))) {
+            completed++;
+          }
+        }
+      }
+      
+      result[a] = {
+        scheduled,
+        completed,
+        percentage: scheduled > 0 ? Math.round((completed / scheduled) * 100) : 0
+      };
+    }
+    
+    return result;
+  }, [areas, habits, checkins, getTargetDays]);
+
+  const last7Days = useMemo(() => {
+    const days: string[] = [];
+    for (let i = 6; i >= 0; i--) {
+      days.push(toDateStr(addDays(new Date(), -i)));
+    }
+    return days;
+  }, []);
+
+  const getHabitLast7Days = (habitId: string) => {
+    const habitTargetDays = getTargetDays(habitId);
+    const habitCheckins = checkins[habitId] || new Set();
+    
+    return last7Days.map(date => {
+      const dayOfWeek = new Date(date).getDay();
+      const scheduled = habitTargetDays.includes(dayOfWeek);
+      const completed = habitCheckins.has(date);
+      return { date, completed, scheduled };
+    });
+  };
+
   const getHeatmapData = (): Record<string, number> => {
     if (viewMode === 'all') return aggregateCheckins();
     const dates = checkins[viewMode];
@@ -66,6 +144,11 @@ export function HabitsPage() {
     dates.forEach(d => { map[d] = 1; });
     return map;
   };
+
+  const areaColors = areas.reduce((acc, a) => {
+    acc[a] = getColor(a);
+    return acc;
+  }, {} as Record<string, string>);
 
   if (loading) {
     return (
@@ -90,7 +173,6 @@ export function HabitsPage() {
       )}
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 'var(--gap-lg)' }}>
-        {/* Add Habit Form */}
         <div className={`card habit-mgmt-card ${isDropdownOpen ? 'has-open-dropdown' : ''}`}>
           <div className="card-title">Add Habit</div>
           <form className="add-habit-form" style={{ marginBottom: 0 }} onSubmit={handleSubmit}>
@@ -104,7 +186,6 @@ export function HabitsPage() {
               id="habit-name-input"
             />
             
-            {/* Custom Dropdown */}
             <CustomDropdown 
               options={areas.map(a => ({ value: a, label: a.charAt(0).toUpperCase() + a.slice(1), color: getColor(a) }))}
               value={area}
@@ -115,9 +196,33 @@ export function HabitsPage() {
 
             <button className="btn btn-primary" type="submit" id="add-habit-btn">+</button>
           </form>
+          
+          <div style={{ marginTop: 'var(--space-sm)' }}>
+            <button 
+              type="button"
+              className="btn btn-ghost"
+              onClick={() => setShowDaySelector(!showDaySelector)}
+              style={{ fontSize: 12, padding: '4px 8px' }}
+            >
+              {showDaySelector ? '▼' : '▶'} Schedule: {targetDays.length}/7 days
+            </button>
+            {showDaySelector && (
+              <div className="day-selector">
+                {DAY_LABELS.map((label, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    className={targetDays.includes(i) ? 'active' : ''}
+                    onClick={() => toggleDay(i)}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* Add Area Form */}
         <div className="card">
           <div className="card-title">Add Area</div>
           <form className="add-habit-form" style={{ marginBottom: 0 }} onSubmit={handleAddArea}>
@@ -130,7 +235,6 @@ export function HabitsPage() {
               style={{ flex: 1 }}
             />
             
-            {/* Aesthetic Color Picker */}
             <div className="color-picker-container">
               <div className="preset-palette">
                 {premiumPresets.map(c => (
@@ -165,7 +269,44 @@ export function HabitsPage() {
         </div>
       </div>
 
-      {/* Habit List */}
+      {areas.length > 0 && (
+        <div className="section" style={{ marginTop: 'var(--gap-lg)' }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--gap-md)' }}>
+            {areas.map(a => {
+              const prog = areaProgress[a] || { scheduled: 0, completed: 0, percentage: 0 };
+              if (prog.scheduled === 0) return null;
+              return (
+                <div 
+                  key={a}
+                  className="area-progress"
+                  style={{ 
+                    flex: '1 1 150px',
+                    padding: 'var(--space-sm) var(--space-md)',
+                    background: 'var(--bg-secondary)',
+                    borderRadius: 'var(--radius-sm)',
+                    border: '1px solid var(--border-light)'
+                  }}
+                >
+                  <span style={{ color: getColor(a), fontWeight: 600, minWidth: 60 }}>{a}</span>
+                  <div className="area-progress-bar">
+                    <div 
+                      className="area-progress-fill"
+                      style={{ 
+                        width: `${prog.percentage}%`,
+                        background: getColor(a)
+                      }}
+                    />
+                  </div>
+                  <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+                    {prog.completed}/{prog.scheduled}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {areas.length === 0 ? (
         <div className="empty-state" style={{ marginTop: 32 }}>
           <span className="empty-icon">🎯</span>
@@ -219,17 +360,25 @@ export function HabitsPage() {
                    <div style={{ fontSize: 13, color: 'var(--text-muted)', paddingLeft: 26, fontStyle: 'italic', marginBottom: 'var(--gap-sm)' }}>No habits in this area.</div>
                 )}
                 <div className="habit-list" style={{ gap: 'var(--gap-sm)' }}>
-                  {group.habits.map(h => (
-                    <HabitCard
-                      key={h.id}
-                      name={h.name}
-                      area={h.area}
-                      areaColor={getColor(h.area)}
-                      checked={isCheckedToday(h.id)}
-                      onToggle={() => toggleCheckin(h.id)}
-                      onDelete={() => deleteHabit(h.id)}
-                    />
-                  ))}
+                  {group.habits.map(h => {
+                    const streakData = streaks[h.id];
+                    return (
+                      <HabitCheckin
+                        key={h.id}
+                        habitId={h.id}
+                        name={h.name}
+                        area={h.area}
+                        areaColor={getColor(h.area)}
+                        checked={isCheckedToday(h.id)}
+                        scheduled={isScheduledToday(h.id)}
+                        streak={streakData?.currentStreak || 0}
+                        longestStreak={streakData?.longestStreak || 0}
+                        last7Days={getHabitLast7Days(h.id)}
+                        onToggle={() => toggleCheckin(h.id)}
+                        onDelete={() => deleteHabit(h.id)}
+                      />
+                    );
+                  })}
                 </div>
               </div>
             ))}
@@ -237,7 +386,6 @@ export function HabitsPage() {
         </div>
       )}
 
-      {/* Heatmap */}
       {habits.length > 0 && (
         <div className="section" style={{ marginTop: 'var(--gap-xl)' }}>
           <div className="card">
@@ -262,6 +410,15 @@ export function HabitsPage() {
               </div>
             </div>
             <Heatmap checkins={getHeatmapData()} />
+          </div>
+        </div>
+      )}
+
+      {habits.length > 0 && leaderboard.length > 0 && (
+        <div className="section" style={{ marginTop: 'var(--gap-xl)' }}>
+          <div className="card">
+            <div className="card-title" style={{ marginBottom: 'var(--gap-md)' }}>Streak Leaderboard</div>
+            <StreakLeaderboard entries={leaderboard} areaColors={areaColors} />
           </div>
         </div>
       )}

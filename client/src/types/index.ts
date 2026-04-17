@@ -24,6 +24,27 @@ export interface Habit {
   name: string;
   area: string;
   created_at: string;
+  target_days?: string; // JSON string like "[0,1,2,3,4,5,6]"
+}
+
+export interface HabitWithSchedule extends Habit {
+  targetDays: number[]; // 0=Sun ... 6=Sat
+}
+
+export interface HabitStreak {
+  habitId: string;
+  currentStreak: number;
+  longestStreak: number;
+  totalCheckins: number;
+  lastCheckinDate: string | null;
+}
+
+export interface LeaderboardEntry {
+  habitId: string;
+  name: string;
+  area: string;
+  currentStreak: number;
+  longestStreak: number;
 }
 
 export interface ToggleCheckinResponse {
@@ -151,4 +172,73 @@ export interface WeeklyReportPreview {
   consistencyPercentage: number;
   weakestArea: string | null;
   recommendations: string[];
+}
+
+// ─── Health Layer Types ───────────────────────────────────────
+
+export interface HealthCheckin {
+  id: string;
+  date: string;
+  hrv: number | null;
+  sleepHours: number | null;
+  sleepQuality: 1 | 2 | 3 | 4 | 5 | null;
+  restingHR: number | null;
+  steps: number | null;
+  energyLevel: 1 | 2 | 3 | 4 | 5 | null;
+  moodScore: 1 | 2 | 3 | 4 | 5 | null;
+  notes: string;
+}
+
+export interface BiologicalMarker {
+  id: string;
+  date: string;
+  vo2MaxEstimate: number | null;
+  gripStrengthKg: number | null;
+  waistCm: number | null;
+  weightKg: number | null;
+  bodyFatPercent: number | null;
+  restingHRAvg: number | null;
+}
+
+export interface LongevityScore {
+  score: number;
+  biologicalAge: number;
+  ageDelta: number;
+  factors: {
+    hrv: number;
+    restingHR: number;
+    sleep: number;
+    steps: number;
+  };
+}
+
+export interface HealthTrend {
+  date: string;
+  value: number;
+}
+
+export interface TodayCheckinStatus {
+  hasCheckedIn: boolean;
+  checkin: HealthCheckin | null;
+}
+
+// ─── Wheel of Life Types ───────────────────────────────────────
+
+export type WheelAxisId = 'body' | 'mind' | 'soul' | 'growth' | 'money' | 'mission' | 'romance' | 'family' | 'friends' | 'joy';
+
+export interface WheelAxis {
+  id: WheelAxisId;
+  currentScore: number;
+  targetScore: number;
+}
+
+export interface WheelSnapshot {
+  id: string;
+  date: string;
+  scores: Record<WheelAxisId, number>;
+}
+
+export interface WheelData {
+  axes: WheelAxis[];
+  snapshots: WheelSnapshot[];
 }

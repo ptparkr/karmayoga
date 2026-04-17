@@ -6,10 +6,21 @@ import type {
   FocusAnalytics,
   FocusQuality,
   Habit,
+  HabitStreak,
+  LeaderboardEntry,
   PomodoroSession,
   StreakData,
   ToggleCheckinResponse,
   WeeklyData,
+  HealthCheckin,
+  LongevityScore,
+  HealthTrend,
+  BiologicalMarker,
+  TodayCheckinStatus,
+  WheelData,
+  WheelAxis,
+  WheelSnapshot,
+  WheelAxisId,
 } from '../types';
 
 const BASE = '/api';
@@ -39,13 +50,19 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 export const api = {
   // Habits
   getHabits: () => request<Habit[]>('/habits'),
-  createHabit: (name: string, area: string) =>
-    request<Habit>('/habits', { method: 'POST', body: JSON.stringify({ name, area }) }),
+  createHabit: (name: string, area: string, targetDays?: number[]) =>
+    request<Habit>('/habits', { method: 'POST', body: JSON.stringify({ name, area, targetDays }) }),
   deleteHabit: (id: string) =>
     request<DeleteResponse>(`/habits/${id}`, { method: 'DELETE' }),
   toggleCheckin: (id: string, date?: string) =>
     request<ToggleCheckinResponse>(`/habits/${id}/checkin`, { method: 'POST', body: JSON.stringify({ date }) }),
   getCheckins: (id: string) => request<string[]>(`/habits/${id}/checkins`),
+  getStreak: (id: string) => request<HabitStreak>(`/habits/${id}/streak`),
+  getLeaderboard: () => request<LeaderboardEntry[]>('/habits/leaderboard'),
+  updateTargetDays: (id: string, targetDays: number[]) =>
+    request<{ success: boolean; targetDays: number[] }>(`/habits/${id}/target-days`, { method: 'PUT', body: JSON.stringify({ targetDays }) }),
+  getCheckinsInRange: (id: string, start: string, end: string) =>
+    request<string[]>(`/habits/${id}/checkins/range?start=${start}&end=${end}`),
 
   // Dashboard
   getStreaks: () => request<StreakData[]>('/dashboard/streaks'),
@@ -72,4 +89,22 @@ export const api = {
     request<AreaColor>(`/areas/${name}`, { method: 'PUT', body: JSON.stringify({ color }) }),
   deleteArea: (name: string) =>
     request<DeleteResponse>(`/areas/${name}`, { method: 'DELETE' }),
+
+  // Health
+  getTodayCheckin: () => request<TodayCheckinStatus>('/health/today'),
+  createCheckin: (checkin: Partial<HealthCheckin>) =>
+    request<HealthCheckin>('/health/checkin', { method: 'POST', body: JSON.stringify(checkin) }),
+  getHealthTrends: (metric: string, days = 30) =>
+    request<HealthTrend[]>(`/health/trends/${metric}?days=${days}`),
+  getLongevity: () => request<LongevityScore>('/health/longevity'),
+  createMarker: (marker: Partial<BiologicalMarker>) =>
+    request<BiologicalMarker>('/health/markers', { method: 'POST', body: JSON.stringify(marker) }),
+  getMarkers: () => request<BiologicalMarker[]>('/health/markers'),
+
+  // Wheel
+  getWheel: () => request<WheelData>('/wheel'),
+  updateWheelAxis: (id: WheelAxisId, score: number, type: 'current' | 'target') =>
+    request<WheelAxis>(`/wheel/axis/${id}`, { method: 'PUT', body: JSON.stringify({ score, type }) }),
+  createWheelSnapshot: () => request<WheelSnapshot>('/wheel/snapshot', { method: 'POST' }),
+  getWheelSnapshots: (weeks = 12) => request<WheelSnapshot[]>(`/wheel/snapshots?weeks=${weeks}`),
 };
