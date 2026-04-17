@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react';
 import { usePomodoro } from '../hooks/usePomodoro';
 import { TimerRing } from '../components/TimerRing';
 import { FocusActivityMap } from '../components/FocusActivityMap';
@@ -9,6 +10,7 @@ export function PomodoroPage() {
     phase, phaseLabel, sessionLabel,
     totalSeconds, remainingSeconds, isRunning,
     start, pause, reset,
+    loading, error,
     todaySessions,
     selectedArea, setSelectedArea, focusAnalytics,
   } = usePomodoro();
@@ -20,6 +22,12 @@ export function PomodoroPage() {
         <h1 className="page-title">Pomodoro</h1>
         <p className="page-subtitle">Deep focus sessions with structured breaks</p>
       </div>
+
+      {error && (
+        <div className="status-banner">
+          <span>{error}</span>
+        </div>
+      )}
 
       <div className="pomodoro-grid">
         {/* Main Timer Section */}
@@ -61,7 +69,7 @@ export function PomodoroPage() {
                   style={{
                     '--color': color,
                     '--shadow-color': `${color}60`,
-                  } as React.CSSProperties}
+                  } as CSSProperties}
                   onClick={() => setSelectedArea(a)}
                 >
                   {a.charAt(0).toUpperCase() + a.slice(1)}
@@ -106,7 +114,7 @@ export function PomodoroPage() {
         {/* Info & Stats Section */}
         <div className="pomodoro-stats-area">
           {/* Activity Map */}
-          <FocusActivityMap analytics={focusAnalytics} />
+          <FocusActivityMap analytics={focusAnalytics} loading={loading} />
 
           {/* Today's Sessions */}
           {todaySessions.length > 0 && (
@@ -115,8 +123,8 @@ export function PomodoroPage() {
                 Session History
               </div>
               <div className="card" style={{ padding: 'var(--gap-md)', background: 'var(--bg-secondary)', border: 'none' }}>
-                {todaySessions.map((s: any, i: number) => (
-                  <div key={i} className="pomodoro-log-item">
+                {todaySessions.map((s, i: number) => (
+                  <div key={`${s.created_at}-${i}`} className="pomodoro-log-item">
                     <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--accent)', boxShadow: '0 0 8px var(--accent)' }} />
                     <span style={{ fontWeight: 700, fontSize: 14 }}>{s.focus_min} min focus session</span>
                     <span style={{ marginLeft: 'auto', color: 'var(--text-muted)', fontSize: 12, fontWeight: 600 }}>

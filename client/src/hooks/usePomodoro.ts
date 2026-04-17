@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { api } from '../lib/api';
+import { storageGet, storageGetString, storageRemove, storageSet, storageSetString } from '../lib/storage';
+import type { FocusAnalytics, PomodoroSession } from '../types';
 
 export type Phase = 'idle' | 'focus' | 'short_break' | 'long_break';
 
@@ -17,29 +19,34 @@ const PRESETS: Record<number, Preset> = {
 };
 
 export function usePomodoro() {
-  const [presetKey, setPresetKey] = useState<number>(() => Number(localStorage.getItem('pomodoro_preset')) || 25);
-  const [phase, setPhase] = useState<Phase>(() => (localStorage.getItem('pomodoro_phase') as Phase) || 'idle');
-  const [totalSeconds, setTotalSeconds] = useState(() => Number(localStorage.getItem('pomodoro_total')) || 25 * 60);
-  const [isRunning, setIsRunning] = useState(() => localStorage.getItem('pomodoro_running') === 'true');
-  const [cycle, setCycle] = useState(() => Number(localStorage.getItem('pomodoro_cycle')) || 1);
-  const [todaySessions, setTodaySessions] = useState<any[]>([]);
-  const [selectedArea, setSelectedArea] = useState<string>(() => localStorage.getItem('pomodoro_area') || 'mind');
-  const [focusAnalytics, setFocusAnalytics] = useState<any>(null);
+  const [presetKey, setPresetKey] = useState<number>(() => storageGet<number>('pomodoro_preset', 25));
+  const [phase, setPhase] = useState<Phase>(() => {
+    const stored = storageGetString('pomodoro_phase', 'idle');
+    return ['idle', 'focus', 'short_break', 'long_break'].includes(stored) ? (stored as Phase) : 'idle';
+  });
+  const [totalSeconds, setTotalSeconds] = useState(() => storageGet<number>('pomodoro_total', 25 * 60));
+  const [isRunning, setIsRunning] = useState(() => storageGetString('pomodoro_running', 'false') === 'true');
+  const [cycle, setCycle] = useState(() => storageGet<number>('pomodoro_cycle', 1));
+  const [todaySessions, setTodaySessions] = useState<PomodoroSession[]>([]);
+  const [selectedArea, setSelectedArea] = useState<string>(() => storageGetString('pomodoro_area', 'mind'));
+  const [focusAnalytics, setFocusAnalytics] = useState<FocusAnalytics | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const [endTime, setEndTime] = useState<number | null>(() => {
-    const saved = localStorage.getItem('pomodoro_endTime');
-    return saved ? Number(saved) : null;
+    const saved = storageGet<number | null>('pomodoro_endTime', null);
+    return typeof saved === 'number' ? saved : null;
   });
 
   const [remainingSeconds, setRemainingSeconds] = useState(() => {
-    const savedEndTime = localStorage.getItem('pomodoro_endTime');
-    const wasRunning = localStorage.getItem('pomodoro_running') === 'true';
+    const savedEndTime = storageGet<number | null>('pomodoro_endTime', null);
+    const wasRunning = storageGetString('pomodoro_running', 'false') === 'true';
     
-    if (savedEndTime && wasRunning) {
-      const remaining = Math.max(0, Math.floor((Number(savedEndTime) - Date.now()) / 1000));
+    if (typeof savedEndTime === 'number' && wasRunning) {
+      const remaining = Math.max(0, Math.floor((savedEndTime - Date.now()) / 1000));
       return remaining;
     }
-    return Number(localStorage.getItem('pomodoro_remaining')) || 25 * 60;
+    return storageGet<number>('pomodoro_remaining', 25 * 60);
   });
 
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -47,23 +54,53 @@ export function usePomodoro() {
 
   // Load today's sessions and analytics
   useEffect(() => {
-    api.getTodaySessions().then(setTodaySessions).catch(console.error);
-    api.getFocusAnalytics().then(setFocusAnalytics).catch(console.error);
+    let cancelled = false;
+
+    const load = async () => {
+      setLoading(true);
+      setError(null);
+
+      try {
+        const [sessions, analytics] = await Promise.all([
+          api.getTodaySessions(),
+          api.getFocusAnalytics(),
+        ]);
+
+        if (cancelled) return;
+        setTodaySessions(sessions);
+        setFocusAnalytics(analytics);
+      } catch (err) {
+        console.error(err);
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : 'Failed to load pomodoro data.');
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    };
+
+    void load();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   // Persistence Sync
   useEffect(() => {
-    localStorage.setItem('pomodoro_preset', String(presetKey));
-    localStorage.setItem('pomodoro_phase', phase);
-    localStorage.setItem('pomodoro_remaining', String(remainingSeconds));
-    localStorage.setItem('pomodoro_total', String(totalSeconds));
-    localStorage.setItem('pomodoro_running', String(isRunning));
-    localStorage.setItem('pomodoro_cycle', String(cycle));
-    localStorage.setItem('pomodoro_area', selectedArea);
+    storageSet('pomodoro_preset', presetKey);
+    storageSetString('pomodoro_phase', phase);
+    storageSet('pomodoro_remaining', remainingSeconds);
+    storageSet('pomodoro_total', totalSeconds);
+    storageSetString('pomodoro_running', String(isRunning));
+    storageSet('pomodoro_cycle', cycle);
+    storageSetString('pomodoro_area', selectedArea);
     if (endTime) {
-      localStorage.setItem('pomodoro_endTime', String(endTime));
+      storageSet('pomodoro_endTime', endTime);
     } else {
-      localStorage.removeItem('pomodoro_endTime');
+      storageRemove('pomodoro_endTime');
     }
   }, [presetKey, phase, remainingSeconds, totalSeconds, isRunning, cycle, selectedArea, endTime]);
 
@@ -117,7 +154,7 @@ export function usePomodoro() {
       setTotalSeconds(secs);
       setRemainingSeconds(secs);
     }
-  }, [phase, cycle, preset]);
+  }, [phase, cycle, preset, selectedArea]);
 
   // Handle Phase End when timer reaches zero
   useEffect(() => {
@@ -187,6 +224,8 @@ export function usePomodoro() {
     start,
     pause,
     reset,
+    loading,
+    error,
     todaySessions,
     presets: Object.keys(PRESETS).map(Number),
     selectedArea,

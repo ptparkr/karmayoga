@@ -7,6 +7,7 @@ import { getWeekdayShort } from '../lib/dateUtils';
 import { api } from '../lib/api';
 import { FocusActivityMap } from '../components/FocusActivityMap';
 import { CustomDropdown } from '../components/CustomDropdown';
+import type { FocusAnalytics, StreakData } from '../types';
 
 function hexToRgba(hex: string, alpha: number): string {
   if (!hex || hex === 'undefined') return `rgba(255, 255, 255, ${alpha})`;
@@ -19,14 +20,20 @@ function hexToRgba(hex: string, alpha: number): string {
 type ChartView = 'focus' | 'areas' | 'consistency' | 'habit';
 
 export function DashboardPage() {
-  const { streaks, weekly, areas, consistency, loading, totalCurrentStreak, totalLongestStreak, toggleCheckin } = useDashboard();
+  const { streaks, weekly, areas, consistency, loading, error, totalCurrentStreak, totalLongestStreak, toggleCheckin, refresh } = useDashboard();
   const { getColor } = useAreaColors();
   const [chartView, setChartView] = useState<ChartView>('focus');
   const [selectedHabit, setSelectedHabit] = useState<string>('');
-  const [focusAnalytics, setFocusAnalytics] = useState<any>(null);
+  const [focusAnalytics, setFocusAnalytics] = useState<FocusAnalytics | null>(null);
+  const [focusError, setFocusError] = useState<string | null>(null);
 
   useEffect(() => {
-    api.getFocusAnalytics().then(setFocusAnalytics).catch(console.error);
+    api.getFocusAnalytics()
+      .then(setFocusAnalytics)
+      .catch(err => {
+        console.error(err);
+        setFocusError(err instanceof Error ? err.message : 'Failed to load focus analytics.');
+      });
   }, []);
 
   if (loading) {
@@ -63,7 +70,7 @@ export function DashboardPage() {
       }
     }
     if (chartView === 'focus' && focusAnalytics) {
-      return focusAnalytics.byArea.map((a: any) => ({
+      return focusAnalytics.byArea.map(a => ({
         label: a.area.charAt(0).toUpperCase() + a.area.slice(1),
         value: a.total_min,
         color: getColor(a.area),
@@ -109,6 +116,19 @@ export function DashboardPage() {
         <p className="page-subtitle">Your progress at a glance</p>
       </div>
 
+      {error && (
+        <div className="status-banner">
+          <span>{error}</span>
+          <button className="status-action" onClick={() => void refresh()}>Retry</button>
+        </div>
+      )}
+
+      {focusError && !error && (
+        <div className="status-banner status-banner-subtle">
+          <span>{focusError}</span>
+        </div>
+      )}
+
       {/* Streak Cards */}
       <div className="stat-row">
         <StreakCard icon="🔥" label="Best Active Streak" value={totalCurrentStreak} glow={totalCurrentStreak >= 7} />
@@ -130,7 +150,7 @@ export function DashboardPage() {
             </div>
             {chartView === 'habit' && (
               <CustomDropdown 
-                options={streaks.map(s => ({ value: s.habitId, label: s.name, color: getColor(s.area) }))}
+                options={streaks.map((s: StreakData) => ({ value: s.habitId, label: s.name, color: getColor(s.area) }))}
                 value={selectedHabit}
                 onChange={setSelectedHabit}
                 placeholder="Select Habit"
@@ -198,10 +218,10 @@ export function DashboardPage() {
                 </tr>
               </thead>
               <tbody>
-                {weekly.matrix.map((row: any) => (
+                {weekly.matrix.map(row => (
                   <tr key={row.habitId}>
                     <td>{row.name}</td>
-                    {row.days.map((day: any) => (
+                    {row.days.map(day => (
                       <td key={day.date}>
                         <span
                           onClick={() => {

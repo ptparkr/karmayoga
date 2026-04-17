@@ -6,7 +6,7 @@ import { Heatmap } from '../components/Heatmap';
 import { CustomDropdown } from '../components/CustomDropdown';
 
 export function HabitsPage() {
-  const { habits, checkins, loading, addHabit, deleteHabit, toggleCheckin, isCheckedToday, aggregateCheckins } = useHabits();
+  const { habits, checkins, loading, error, addHabit, deleteHabit, toggleCheckin, isCheckedToday, aggregateCheckins, refresh } = useHabits();
   const { areas, getColor, updateColor, addArea, removeArea } = useAreaColors();
   const [name, setName] = useState('');
   const [area, setArea] = useState('');
@@ -81,6 +81,13 @@ export function HabitsPage() {
         <h1 className="page-title">Habits & Areas</h1>
         <p className="page-subtitle">Track your daily habits across your customizable areas of life</p>
       </div>
+
+      {error && (
+        <div className="status-banner">
+          <span>{error}</span>
+          <button className="status-action" onClick={() => void refresh()}>Retry</button>
+        </div>
+      )}
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 'var(--gap-lg)' }}>
         {/* Add Habit Form */}

@@ -9,6 +9,7 @@ export interface TimeInfo {
   todayStart: string;
   todayEnd: string;
   weekStart: string;
+  weekEnd: string;
   monthStart: string;
   dayOfWeek: number;
   timezone: string;
@@ -31,6 +32,10 @@ export function getCurrentTimeInfo(): TimeInfo {
   const weekStart = new Date(now);
   weekStart.setDate(diff);
   weekStart.setHours(0, 0, 0, 0);
+
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekStart.getDate() + 6);
+  weekEnd.setHours(23, 59, 59, 999);
   
   // Start of Month
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -42,6 +47,7 @@ export function getCurrentTimeInfo(): TimeInfo {
     todayStart: todayStart.toISOString(),
     todayEnd: todayEnd.toISOString(),
     weekStart: weekStart.toISOString(),
+    weekEnd: weekEnd.toISOString(),
     monthStart: monthStart.toISOString(),
     dayOfWeek: now.getDay(),
     timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,

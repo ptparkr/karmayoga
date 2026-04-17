@@ -1,20 +1,18 @@
 import { useState, useEffect, useCallback } from 'react';
 import { api } from '../lib/api';
 import { today } from '../lib/dateUtils';
-
-interface Habit {
-  id: string;
-  name: string;
-  area: string;
-  created_at: string;
-}
+import type { Habit } from '../types';
 
 export function useHabits() {
   const [habits, setHabits] = useState<Habit[]>([]);
   const [checkins, setCheckins] = useState<Record<string, Set<string>>>({}); // habitId -> Set<date>
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+
     try {
       const data = await api.getHabits();
       setHabits(data);
@@ -29,6 +27,7 @@ export function useHabits() {
       setCheckins(Object.fromEntries(entries));
     } catch (err) {
       console.error('Failed to load habits:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load habits.');
     } finally {
       setLoading(false);
     }
@@ -78,5 +77,5 @@ export function useHabits() {
     return map;
   }, [checkins]);
 
-  return { habits, checkins, loading, addHabit, deleteHabit, toggleCheckin, isCheckedToday, aggregateCheckins, refresh: load };
+  return { habits, checkins, loading, error, addHabit, deleteHabit, toggleCheckin, isCheckedToday, aggregateCheckins, refresh: load };
 }

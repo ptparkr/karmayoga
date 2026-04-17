@@ -1,47 +1,73 @@
+import type {
+  AreaColor,
+  AreaSummary,
+  ConsistencyData,
+  DeleteResponse,
+  FocusAnalytics,
+  Habit,
+  PomodoroSession,
+  StreakData,
+  ToggleCheckinResponse,
+  WeeklyData,
+} from '../types';
+
 const BASE = '/api';
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${BASE}${path}`, {
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      ...(options?.headers ?? {}),
+    },
     ...options,
   });
-  if (!res.ok) throw new Error(`API ${res.status}: ${await res.text()}`);
-  return res.json();
+
+  if (!res.ok) {
+    const message = await res.text();
+    throw new Error(message || `API ${res.status}`);
+  }
+
+  if (res.status === 204) {
+    return undefined as T;
+  }
+
+  const text = await res.text();
+  return text ? (JSON.parse(text) as T) : (undefined as T);
 }
 
 export const api = {
   // Habits
-  getHabits: () => request<any[]>('/habits'),
+  getHabits: () => request<Habit[]>('/habits'),
   createHabit: (name: string, area: string) =>
-    request<any>('/habits', { method: 'POST', body: JSON.stringify({ name, area }) }),
+    request<Habit>('/habits', { method: 'POST', body: JSON.stringify({ name, area }) }),
   deleteHabit: (id: string) =>
-    request<any>(`/habits/${id}`, { method: 'DELETE' }),
+    request<DeleteResponse>(`/habits/${id}`, { method: 'DELETE' }),
   toggleCheckin: (id: string, date?: string) =>
-    request<any>(`/habits/${id}/checkin`, { method: 'POST', body: JSON.stringify({ date }) }),
+    request<ToggleCheckinResponse>(`/habits/${id}/checkin`, { method: 'POST', body: JSON.stringify({ date }) }),
   getCheckins: (id: string) => request<string[]>(`/habits/${id}/checkins`),
 
   // Dashboard
-  getStreaks: () => request<any[]>('/dashboard/streaks'),
-  getWeekly: () => request<any>('/dashboard/weekly'),
-  getAreas: () => request<any[]>('/dashboard/areas'),
-  getConsistency: () => request<any>('/dashboard/consistency'),
+  getStreaks: () => request<StreakData[]>('/dashboard/streaks'),
+  getWeekly: () => request<WeeklyData>('/dashboard/weekly'),
+  getAreas: () => request<AreaSummary[]>('/dashboard/areas'),
+  getConsistency: () => request<ConsistencyData>('/dashboard/consistency'),
 
   // Pomodoro
   logSession: (focus_min: number, break_min: number, completed: boolean, area?: string) =>
-    request<any>('/pomodoro', { method: 'POST', body: JSON.stringify({ focus_min, break_min, completed, area }) }),
-  getTodaySessions: () => request<any[]>('/pomodoro/today'),
+    request<{ success: true }>('/pomodoro', { method: 'POST', body: JSON.stringify({ focus_min, break_min, completed, area }) }),
+  getTodaySessions: () => request<PomodoroSession[]>('/pomodoro/today'),
   getFocusAnalytics: (startDate?: string, endDate?: string) => {
     const params = new URLSearchParams();
     if (startDate) params.append('startDate', startDate);
     if (endDate) params.append('endDate', endDate);
     const query = params.toString() ? `?${params.toString()}` : '';
-    return request<any>(`/pomodoro/analytics${query}`);
+    return request<FocusAnalytics>(`/pomodoro/analytics${query}`);
   },
 
   // Areas
-  getAreaColors: () => request<{ name: string; color: string }[]>('/areas'),
+  getAreaColors: () => request<AreaColor[]>('/areas'),
   updateAreaColor: (name: string, color: string) =>
-    request<any>(`/areas/${name}`, { method: 'PUT', body: JSON.stringify({ color }) }),
+    request<AreaColor>(`/areas/${name}`, { method: 'PUT', body: JSON.stringify({ color }) }),
   deleteArea: (name: string) =>
-    request<any>(`/areas/${name}`, { method: 'DELETE' }),
+    request<DeleteResponse>(`/areas/${name}`, { method: 'DELETE' }),
 };

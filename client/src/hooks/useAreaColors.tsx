@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { api } from '../lib/api';
+import type { AreaColor } from '../types';
 
 interface AreaColorsContextType {
   areas: string[];
@@ -24,20 +25,25 @@ const AreaColorsContext = createContext<AreaColorsContextType>({
 export function AreaColorsProvider({ children }: { children: ReactNode }) {
   const [areas, setAreas] = useState<string[]>([]);
   const [colors, setColors] = useState<Record<string, string>>({});
+  const [hasLoaded, setHasLoaded] = useState(false);
 
   useEffect(() => {
     api.getAreaColors()
       .then(fetchedAreas => {
         const map: Record<string, string> = {};
         const areaList: string[] = [];
-        fetchedAreas.forEach(a => { 
+        fetchedAreas.forEach((a: AreaColor) => {
           map[a.name] = a.color; 
           areaList.push(a.name);
         });
         setAreas(areaList);
         setColors(map);
+        setHasLoaded(true);
       })
-      .catch(console.error);
+      .catch(err => {
+        console.error(err);
+        setHasLoaded(true);
+      });
   }, []);
 
   const updateColor = useCallback(async (area: string, color: string) => {
@@ -64,6 +70,21 @@ export function AreaColorsProvider({ children }: { children: ReactNode }) {
     });
     await api.deleteArea(area);
   }, []);
+
+  useEffect(() => {
+    if (hasLoaded || areas.length > 0) return;
+
+    const defaults = [
+      ['body', '#00ffcc'],
+      ['mind', '#3b82f6'],
+      ['soul', '#8b5cf6'],
+      ['growth', '#f59e0b'],
+      ['money', '#10b981'],
+    ] as const;
+
+    setAreas(defaults.map(([name]) => name));
+    setColors(Object.fromEntries(defaults));
+  }, [areas.length, hasLoaded]);
 
   return (
     <AreaColorsContext.Provider value={{ areas, colors, updateColor, getColor, addArea, removeArea }}>

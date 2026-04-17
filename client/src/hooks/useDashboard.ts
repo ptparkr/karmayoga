@@ -1,49 +1,19 @@
 import { useState, useEffect, useCallback } from 'react';
 import { api } from '../lib/api';
-
-interface StreakData {
-  habitId: string;
-  name: string;
-  area: string;
-  currentStreak: number;
-  longestStreak: number;
-  totalCheckins: number;
-}
-
-interface WeeklyData {
-  weekDates: string[];
-  matrix: {
-    habitId: string;
-    name: string;
-    area: string;
-    days: { date: string; checked: boolean }[];
-  }[];
-}
-
-interface AreaData {
-  area: string;
-  habitCount: number;
-  checkins: number;
-  possible: number;
-  percentage: number;
-}
-
-interface ConsistencyData {
-  totalHabits: number;
-  totalCheckins: number;
-  possible: number;
-  percentage: number;
-  missed: number;
-}
+import type { AreaSummary, ConsistencyData, StreakData, WeeklyData } from '../types';
 
 export function useDashboard() {
   const [streaks, setStreaks] = useState<StreakData[]>([]);
   const [weekly, setWeekly] = useState<WeeklyData | null>(null);
-  const [areas, setAreas] = useState<AreaData[]>([]);
+  const [areas, setAreas] = useState<AreaSummary[]>([]);
   const [consistency, setConsistency] = useState<ConsistencyData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+
     try {
       const [s, w, a, c] = await Promise.all([
         api.getStreaks(),
@@ -57,6 +27,7 @@ export function useDashboard() {
       setConsistency(c);
     } catch (err) {
       console.error('Failed to load dashboard:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load dashboard data.');
     } finally {
       setLoading(false);
     }
@@ -83,6 +54,7 @@ export function useDashboard() {
     areas,
     consistency,
     loading,
+    error,
     totalCurrentStreak,
     totalLongestStreak,
     toggleCheckin,

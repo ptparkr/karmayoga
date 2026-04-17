@@ -1,19 +1,16 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useAreaColors } from '../hooks/useAreaColors';
 import { api } from '../lib/api';
+import type { FocusAnalytics, FocusDay, Timeframe } from '../types';
 
 interface Props {
-  analytics: {
-    weekDays: { date: string; minutes: number }[];
-  } | null;
+  analytics: FocusAnalytics | null;
   loading?: boolean;
 }
 
 export function FocusActivityMap({ analytics, loading }: Props) {
-  const { getColor } = useAreaColors();
-  const [timeframe, setTimeframe] = useState<'daily' | 'weekly' | 'monthly' | 'yearly'>('weekly');
+  const [timeframe, setTimeframe] = useState<Timeframe>('weekly');
   const [currentOffset, setCurrentOffset] = useState(0);
-  const [displayData, setDisplayData] = useState<{ date: string; minutes: number }[]>([]);
+  const [displayData, setDisplayData] = useState<FocusDay[]>(analytics?.weekDays ?? []);
 
   const getDateRange = useCallback((offset: number) => {
     const today = new Date();
@@ -30,7 +27,7 @@ export function FocusActivityMap({ analytics, loading }: Props) {
       const dayOfWeek = today.getDay();
       const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
       start = new Date(today);
-      start.setDate(start.getDate() + mondayOffset + (offset * 7));
+      start.setDate(start.getDate() + mondayOffset + offset * 7);
       end = new Date(start);
       end.setDate(end.getDate() + 6);
       days = 7;
@@ -44,7 +41,7 @@ export function FocusActivityMap({ analytics, loading }: Props) {
       days = 366;
     }
 
-    const formatDate = (d: Date) => d.toISOString().split('T')[0];
+    const formatDate = (date: Date) => date.toISOString().split('T')[0];
     return { start: formatDate(start), end: formatDate(end), days };
   }, [timeframe]);
 
@@ -60,28 +57,40 @@ export function FocusActivityMap({ analytics, loading }: Props) {
 
   useEffect(() => {
     fetchData(currentOffset);
-  }, [currentOffset, timeframe, fetchData]);
+  }, [currentOffset, fetchData]);
+
+  useEffect(() => {
+    if (timeframe === 'weekly' && currentOffset === 0 && analytics?.weekDays?.length) {
+      setDisplayData(analytics.weekDays);
+    }
+  }, [analytics, currentOffset, timeframe]);
 
   const handlePrev = () => setCurrentOffset(prev => prev - 1);
   const handleNext = () => setCurrentOffset(prev => prev + 1);
 
   const getDateLabel = () => {
     if (displayData.length === 0) return '';
-    const firstDate = new Date(displayData[0].date + 'T00:00:00');
-    const lastDate = new Date(displayData[displayData.length - 1].date + 'T00:00:00');
-    
+
+    const firstDate = new Date(`${displayData[0].date}T00:00:00`);
+    const lastDate = new Date(`${displayData[displayData.length - 1].date}T00:00:00`);
+
     if (timeframe === 'daily') {
       return firstDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-    } else if (timeframe === 'weekly') {
+    }
+
+    if (timeframe === 'weekly') {
       if (firstDate.getMonth() === lastDate.getMonth()) {
         return firstDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
       }
+
       return `${firstDate.toLocaleDateString('en-US', { month: 'short' })} - ${lastDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}`;
-    } else if (timeframe === 'monthly') {
-      return firstDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-    } else {
-      return firstDate.getFullYear().toString();
     }
+
+    if (timeframe === 'monthly') {
+      return firstDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    }
+
+    return firstDate.getFullYear().toString();
   };
 
   if (loading || !analytics) {
@@ -89,20 +98,17 @@ export function FocusActivityMap({ analytics, loading }: Props) {
       <div className="card focus-activity-card" style={{ opacity: 0.6, width: '100%', maxWidth: 'none' }}>
         <div className="section-title">Activity Map</div>
         <div style={{ height: 200, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <span className="empty-icon" style={{ animation: 'pulse 1.5s infinite' }}>⏳</span>
+          <span className="empty-icon" style={{ animation: 'pulse 1.5s infinite' }}>...</span>
         </div>
       </div>
     );
   }
 
-  const todayLocal = new Date().getFullYear() + '-' + String(new Date().getMonth() + 1).padStart(2, '0') + '-' + String(new Date().getDate()).padStart(2, '0');
-
-  const totalMinutes = displayData.reduce((sum, d) => sum + d.minutes, 0);
+  const now = new Date();
+  const todayLocal = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  const totalMinutes = displayData.reduce((sum, day) => sum + day.minutes, 0);
   const hours = Math.floor(totalMinutes / 60);
   const minutes = totalMinutes % 60;
-
-  const rangeStart = displayData.length > 0 ? new Date(displayData[0].date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '';
-  const rangeEnd = displayData.length > 0 ? new Date(displayData[displayData.length - 1].date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '';
 
   const getCellColor = (mins: number) => {
     if (mins === 0) return 'var(--bg-tertiary)';
@@ -111,8 +117,6 @@ export function FocusActivityMap({ analytics, loading }: Props) {
     if (mins < 240) return 'rgba(0, 255, 204, 0.5)';
     return 'var(--accent)';
   };
-
-  const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
   return (
     <div className="card focus-activity-card animate-in" style={{ width: '100%', maxWidth: 'none', border: 'none', background: 'var(--bg-secondary)' }}>
@@ -123,18 +127,21 @@ export function FocusActivityMap({ analytics, loading }: Props) {
           </div>
           <div className="focus-time-display">
             <span className="focus-time-val">{hours}h {minutes}m</span>
-            <span className="focus-time-range">{timeframe} VIEW · {getDateLabel()}</span>
+            <span className="focus-time-range">{timeframe} view · {getDateLabel()}</span>
           </div>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-sm)' }}>
           <button className="toggle-btn" onClick={handlePrev}>&lt;</button>
           <div className="timeframe-toggles">
-            {(['daily', 'weekly', 'monthly', 'yearly'] as const).map((tf) => (
-              <button 
+            {(['daily', 'weekly', 'monthly', 'yearly'] as const).map(tf => (
+              <button
                 key={tf}
                 className={`toggle-btn ${timeframe === tf ? 'active' : ''}`}
-                onClick={() => setTimeframe(tf)}
+                onClick={() => {
+                  setCurrentOffset(0);
+                  setTimeframe(tf);
+                }}
               >
                 {tf.toUpperCase()}
               </button>
@@ -144,31 +151,33 @@ export function FocusActivityMap({ analytics, loading }: Props) {
         </div>
       </div>
 
-      <div className="activity-grid-weekly" style={{ 
-        marginTop: 'var(--gap-lg)',
-        display: 'grid',
-        gridTemplateColumns: timeframe === 'daily' ? '1fr' : 'repeat(7, 1fr)',
-        gap: 'var(--gap-md)'
-      }}>
-        {displayData.map((day, i) => {
-          if (!day) return null;
-          const d = new Date(day.date + 'T00:00:00'); // Force local interpretation
+      <div
+        className="activity-grid-weekly"
+        style={{
+          marginTop: 'var(--gap-lg)',
+          display: 'grid',
+          gridTemplateColumns: timeframe === 'daily' ? '1fr' : 'repeat(7, 1fr)',
+          gap: 'var(--gap-md)',
+        }}
+      >
+        {displayData.map(day => {
+          const date = new Date(`${day.date}T00:00:00`);
           const isToday = day.date === todayLocal;
-          const dayName = d.toLocaleDateString('en-US', { weekday: 'short' });
-          const dateNum = d.getDate();
-          const monthName = d.toLocaleDateString('en-US', { month: 'short' });
+          const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
+          const dateNum = date.getDate();
+          const monthName = date.toLocaleDateString('en-US', { month: 'short' });
 
           return (
-            <div 
-              key={day.date} 
+            <div
+              key={day.date}
               className={`activity-cell ${isToday ? 'today' : ''}`}
-              style={{ 
+              style={{
                 background: day.minutes > 0 ? getCellColor(day.minutes) : 'rgba(255,255,255,0.02)',
                 padding: 'var(--gap-md)',
                 minHeight: timeframe === 'daily' ? 140 : 100,
                 borderRadius: 'var(--radius-lg)',
                 border: isToday ? '2px solid var(--accent)' : (day.minutes > 0 ? '1px solid rgba(0, 255, 204, 0.1)' : '1px solid var(--border)'),
-                boxShadow: day.minutes >= 240 ? '0 0 20px rgba(0, 255, 204, 0.2)' : (isToday ? '0 0 15px var(--accent-glow)' : 'none'),
+                boxShadow: day.minutes >= 240 ? '0 0 20px rgba(0, 255, 204, 0.2)' : (isToday ? '0 0 15px rgba(0, 255, 204, 0.35)' : 'none'),
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
@@ -176,21 +185,23 @@ export function FocusActivityMap({ analytics, loading }: Props) {
                 gap: '2px',
                 transition: 'all 0.4s var(--ease-out)',
                 position: 'relative',
-                overflow: 'hidden'
+                overflow: 'hidden',
               }}
               title={`${dayName}, ${monthName} ${dateNum}: ${day.minutes}m focus`}
             >
               {isToday && (
-                <div style={{ 
-                  position: 'absolute', 
-                  top: 8, 
-                  right: 8, 
-                  width: 6, 
-                  height: 6, 
-                  borderRadius: '50%', 
-                  background: 'var(--accent)',
-                  boxShadow: '0 0 8px var(--accent)'
-                }} />
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: 8,
+                    right: 8,
+                    width: 6,
+                    height: 6,
+                    borderRadius: '50%',
+                    background: 'var(--accent)',
+                    boxShadow: '0 0 8px var(--accent)',
+                  }}
+                />
               )}
               <div className="cell-day-name" style={{ fontSize: 11, fontWeight: 600, opacity: 0.5, textTransform: 'uppercase' }}>
                 {dayName}
@@ -201,20 +212,23 @@ export function FocusActivityMap({ analytics, loading }: Props) {
               <div className="cell-month" style={{ fontSize: 10, fontWeight: 700, opacity: 0.4, textTransform: 'uppercase' }}>
                 {monthName}
               </div>
-              <div className="cell-mins" style={{ 
-                marginTop: '8px',
-                fontSize: 18, 
-                fontWeight: 900, 
-                color: day.minutes > 0 ? 'var(--text-primary)' : 'var(--text-muted)',
-                opacity: day.minutes > 0 ? 1 : 0.3
-              }}>
-                {day.minutes > 0 ? `${day.minutes}m` : '—'}
+              <div
+                className="cell-mins"
+                style={{
+                  marginTop: '8px',
+                  fontSize: 18,
+                  fontWeight: 900,
+                  color: day.minutes > 0 ? 'var(--text-primary)' : 'var(--text-muted)',
+                  opacity: day.minutes > 0 ? 1 : 0.3,
+                }}
+              >
+                {day.minutes > 0 ? `${day.minutes}m` : '--'}
               </div>
             </div>
           );
         })}
       </div>
-      
+
       <div className="activity-legend" style={{ justifyContent: 'center', marginTop: 'var(--gap-xl)' }}>
         <div className="legend-item"><span className="legend-box" style={{ background: 'rgba(0, 255, 204, 0.1)' }} /> Low</div>
         <div className="legend-item"><span className="legend-box" style={{ background: 'rgba(0, 255, 204, 0.3)' }} /> Med</div>
@@ -223,17 +237,19 @@ export function FocusActivityMap({ analytics, loading }: Props) {
       </div>
 
       {(timeframe === 'monthly' || timeframe === 'yearly') && (
-        <div style={{ 
-          marginTop: 'var(--gap-lg)', 
-          textAlign: 'center', 
-          fontSize: 11, 
-          color: 'var(--text-muted)',
-          background: 'rgba(255, 255, 255, 0.02)',
-          padding: '10px',
-          borderRadius: 'var(--radius-md)',
-          border: '1px dashed var(--border)'
-        }}>
-          💡 Historical trends for {timeframe} will appear as you build your practice.
+        <div
+          style={{
+            marginTop: 'var(--gap-lg)',
+            textAlign: 'center',
+            fontSize: 11,
+            color: 'var(--text-muted)',
+            background: 'rgba(255, 255, 255, 0.02)',
+            padding: '10px',
+            borderRadius: 'var(--radius-md)',
+            border: '1px dashed var(--border)',
+          }}
+        >
+          Historical trends for {timeframe} will appear as you build your practice.
         </div>
       )}
     </div>
