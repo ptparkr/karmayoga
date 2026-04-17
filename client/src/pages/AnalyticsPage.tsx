@@ -31,9 +31,6 @@ export function AnalyticsPage() {
     momentum,
     peakHours,
     areaBalance,
-    sleepFocusCorr,
-    energyMoodCorr,
-    regression,
     weeklyReport,
     sessions,
     habits,
@@ -45,7 +42,10 @@ export function AnalyticsPage() {
     loading,
     error,
     refresh,
+    getColor: getColorFromAnalytics,
   } = useAnalytics();
+
+  const getAreaColor = getColorFromAnalytics || getColor;
 
   const overviewCards = useMemo(() => {
     const avgMomentum = momentum.length > 0
@@ -133,16 +133,12 @@ export function AnalyticsPage() {
 
             <div className="analytics-section">
               <h3 className="analytics-section-title">Area Balance (8 weeks)</h3>
-              <AreaBalance data={areaBalance} areas={habitAreas} getColor={getColor} />
+              <AreaBalance data={areaBalance} areas={habitAreas} getColor={getAreaColor} />
             </div>
 
             <div className="analytics-section">
-              <h3 className="analytics-section-title">Sleep × Focus Correlation</h3>
-              <SleepFocusCorrelation 
-                data={sleepFocusCorr} 
-                regression={regression}
-                hasData={sleepFocusCorr.length > 0}
-              />
+              <h3 className="analytics-section-title">Focus Sessions</h3>
+              <FocusSessionsList sessions={sessions} />
             </div>
           </div>
         )}
@@ -151,12 +147,12 @@ export function AnalyticsPage() {
           <div className="analytics-habits">
             <div className="analytics-section">
               <h3 className="analytics-section-title">Area Completion Rates</h3>
-              <HabitAreaAnalytics areas={areaSummaries} getColor={getColor} />
+              <HabitAreaAnalytics areas={areaSummaries} getColor={getAreaColor} />
             </div>
 
             <div className="analytics-section">
               <h3 className="analytics-section-title">Streak Leaderboard</h3>
-              <StreakLeaderboardSimple streaks={streaks} getColor={getColor} />
+              <StreakLeaderboardSimple streaks={streaks} getColor={getAreaColor} />
             </div>
           </div>
         )}
@@ -164,13 +160,11 @@ export function AnalyticsPage() {
         {activeTab === 'health' && (
           <div className="analytics-health">
             <div className="analytics-section">
-              <h3 className="analytics-section-title">Energy × Mood Correlation</h3>
-              <HealthCorrelations data={energyMoodCorr} />
-            </div>
-
-            <div className="analytics-section">
-              <h3 className="analytics-section-title">Key Metrics</h3>
-              <HealthMetricsPreview checkins={[]} />
+              <h3 className="analytics-section-title">Track Your Health</h3>
+              <div className="analytics-empty">
+                <p>Log daily health check-ins to see correlations.</p>
+                <a href="/health" className="btn btn-ghost">Go to Health →</a>
+              </div>
             </div>
           </div>
         )}
@@ -184,6 +178,34 @@ export function AnalyticsPage() {
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+function FocusSessionsList({ sessions }: { sessions: any[] }) {
+  if (!sessions || sessions.length === 0) {
+    return (
+      <div className="analytics-empty">
+        <p>No focus sessions yet. Start a pomodoro session!</p>
+        <a href="/pomodoro" className="btn btn-ghost">Go to Pomodoro →</a>
+      </div>
+    );
+  }
+
+  return (
+    <div className="focus-sessions-list">
+      {sessions.slice(0, 10).map((session: any, i: number) => (
+        <div key={session.id || i} className="focus-session-item">
+          <span className="focus-session-area">{session.area || 'other'}</span>
+          <span className="focus-session-duration">{session.focus_min || 0}m</span>
+          <span className="focus-session-date">
+            {session.created_at ? new Date(session.created_at).toLocaleDateString() : 'N/A'}
+          </span>
+        </div>
+      ))}
+      {sessions.length > 10 && (
+        <div className="focus-sessions-more">+{sessions.length - 10} more sessions</div>
+      )}
     </div>
   );
 }

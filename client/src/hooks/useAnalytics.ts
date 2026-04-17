@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { api } from '../lib/api';
-import type { PomodoroSession, HabitWithSchedule, AreaSummary, ConsistencyData, StreakData } from '../types';
+import type { PomodoroSession, HabitWithSchedule, AreaSummary, ConsistencyData, StreakData, WheelAxisId } from '../types';
 import type { 
   MomentumDataPoint, 
   PeakHourCell, 
@@ -13,19 +13,14 @@ import {
   momentumTimeSeries, 
   peakHoursGrid, 
   areaBalanceByAreas, 
-  sleepFocusCorrelation,
-  linearRegression,
-  energyMoodCorrelation,
   buildWeeklyReport 
 } from '../lib/analytics';
 import { useAreaColors } from './useAreaColors';
-import type { WheelAxisId } from '../types';
 
 type WheelAxis = { id: WheelAxisId; currentScore: number; targetScore: number };
 
 export function useAnalytics() {
   const [sessions, setSessions] = useState<PomodoroSession[]>([]);
-  const [healthCheckins, setHealthCheckins] = useState<any[]>([]);
   const [habits, setHabits] = useState<HabitWithSchedule[]>([]);
   const [habitAreas, setHabitAreas] = useState<string[]>([]);
   const [areaSummaries, setAreaSummaries] = useState<AreaSummary[]>([]);
@@ -35,15 +30,12 @@ export function useAnalytics() {
   const [wheelSnapshots, setWheelSnapshots] = useState<{ date: string; scores: Record<WheelAxisId, number> }[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { areas: areaColorsList } = useAreaColors();
+  const { areas: areaColorsList, getColor } = useAreaColors();
 
   // Computed analytics
   const [momentum, setMomentum] = useState<MomentumDataPoint[]>([]);
   const [peakHours, setPeakHours] = useState<PeakHourCell[][]>([]);
   const [areaBalance, setAreaBalance] = useState<AreaBalanceData[]>([]);
-  const [sleepFocusCorr, setSleepFocusCorr] = useState<CorrelationPoint[]>([]);
-  const [energyMoodCorr, setEnergyMoodCorr] = useState<EnergyMoodPoint[]>([]);
-  const [regression, setRegression] = useState<{ slope: number; intercept: number }>({ slope: 0, intercept: 0 });
   const [weeklyReport, setWeeklyReport] = useState<WeeklyReportData | null>(null);
 
   const loadData = useCallback(async () => {
@@ -51,16 +43,45 @@ export function useAnalytics() {
     setError(null);
 
     try {
-      const [sessionsData, habitsData, areasData, consistencyData, streaksData] = await Promise.all([
-        api.getRecentSessions(30),
-        api.getHabits(),
-        api.getAreas(),
-        api.getConsistency(),
-        api.getStreaks(),
-      ]);
+      // Fetch data with individual try/catch for each to avoid one failure breaking all
+      let sessionsData: PomodoroSession[] = [];
+      let habitsData: any[] = [];
+      let areasData: AreaSummary[] = [];
+      let consistencyData: ConsistencyData | null = null;
+      let streaksData: StreakData[] = [];
+
+      try {
+        sessionsData = await api.getRecentSessions(30);
+      } catch (e) {
+        console.warn('Failed to fetch sessions:', e);
+      }
+
+      try {
+        habitsData = await api.getHabits();
+      } catch (e) {
+        console.warn('Failed to fetch habits:', e);
+      }
+
+      try {
+        areasData = await api.getAreas();
+      } catch (e) {
+        console.warn('Failed to fetch areas:', e);
+      }
+
+      try {
+        consistencyData = await api.getConsistency();
+      } catch (e) {
+        console.warn('Failed to fetch consistency:', e);
+      }
+
+      try {
+        streaksData = await api.getStreaks();
+      } catch (e) {
+        console.warn('Failed to fetch streaks:', e);
+      }
 
       setSessions(sessionsData);
-      setHabits(habitsData.map((h: any) => ({
+      setHabits(habitsData.map(h => ({
         ...h,
         targetDays: JSON.parse(h.target_days || '[]') as number[],
       })));
@@ -72,11 +93,11 @@ export function useAnalytics() {
       setAreaSummaries(areasData);
       setConsistency(consistencyData);
       setStreaks(streaksData);
-      setHealthCheckins([]);
 
-      // Compute momentum & peak hours
+      // Compute momentum with actual sessions data
       const mom = momentumTimeSeries(sessionsData);
       setMomentum(mom);
+      console.log('Analytics: computed momentum:', mom.length, 'data points');
 
       const peak = peakHoursGrid(sessionsData);
       setPeakHours(peak);
@@ -85,8 +106,9 @@ export function useAnalytics() {
       const dynamicAreas = uniqueAreas.length > 0 ? uniqueAreas : (areaColorsList.slice(0, 3) as string[]);
       const balance = areaBalanceByAreas(sessionsData, dynamicAreas, 8);
       setAreaBalance(balance);
+      console.log('Analytics: computed areaBalance:', balance.length, 'weeks, areas:', dynamicAreas);
 
-      // Load wheel data from localStorage (matching useWheel hook pattern)
+      // Load wheel data from localStorage
       try {
         const stored = localStorage.getItem('wheel_data');
         if (stored) {
@@ -99,14 +121,11 @@ export function useAnalytics() {
           }));
           setWheelAxes(loadedAxes);
           setWheelSnapshots(wheelData.snapshots || []);
+          console.log('Analytics: loaded wheel axes:', loadedAxes.length);
         }
       } catch (err) {
-        console.error('Failed to load wheel data:', err);
+        console.warn('Failed to load wheel data:', err);
       }
-
-      // Empty health correlations for now
-      setSleepFocusCorr([]);
-      setEnergyMoodCorr([]);
 
       // Build weekly report
       const report = buildWeeklyReport(
@@ -117,22 +136,21 @@ export function useAnalytics() {
         wheelAxes
       );
       setWeeklyReport(report);
+      console.log('Analytics: built weekly report');
     } catch (err) {
       console.error('Analytics load error:', err);
       setError(err instanceof Error ? err.message : 'Failed to load analytics');
     } finally {
       setLoading(false);
     }
-  }, [areaColorsList, wheelAxes]);
+  }, [areaColorsList]);
 
   useEffect(() => {
     void loadData();
   }, [loadData]);
 
   return {
-    // Raw data
     sessions,
-    healthCheckins,
     habits,
     habitAreas,
     areaSummaries,
@@ -140,17 +158,13 @@ export function useAnalytics() {
     streaks,
     wheelAxes,
     wheelSnapshots,
-    // Computed
     momentum,
     peakHours,
     areaBalance,
-    sleepFocusCorr,
-    energyMoodCorr,
-    regression,
     weeklyReport,
-    // State
     loading,
     error,
+    getColor,
     refresh: loadData,
   };
 }

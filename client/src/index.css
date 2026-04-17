@@ -3806,6 +3806,46 @@ input[type="color"]::-moz-color-swatch {
   border-top: 1px solid var(--border-light);
 }
 
+/* Focus Sessions List */
+.focus-sessions-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-sm);
+}
+
+.focus-session-item {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-md);
+  padding: var(--gap-sm) var(--gap-md);
+  background: var(--bg-secondary);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-light);
+}
+
+.focus-session-area {
+  flex: 1;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.focus-session-duration {
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.focus-session-date {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.focus-sessions-more {
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-muted);
+  padding: var(--gap-sm);
+}
+
 /* Mini List Styles */
 .streak-mini-list {
   display: flex;
