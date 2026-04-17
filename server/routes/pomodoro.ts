@@ -6,15 +6,15 @@ const router = Router();
 
 // POST /api/pomodoro — log a completed session
 router.post('/', (req: Request, res: Response) => {
-  const { focus_min, break_min, completed, area } = req.body;
+  const { focus_min, break_min, completed, area, intention, quality } = req.body;
   if (!focus_min) {
     res.status(400).json({ error: 'focus_min required' });
     return;
   }
   const db = getDb();
   db.run(
-    'INSERT INTO pomodoro_sessions (focus_min, break_min, completed, area) VALUES (?, ?, ?, ?)',
-    [focus_min, break_min || 0, completed ? 1 : 0, area || 'other']
+    'INSERT INTO pomodoro_sessions (focus_min, break_min, completed, area, intention, quality) VALUES (?, ?, ?, ?, ?, ?)',
+    [focus_min, break_min || 0, completed ? 1 : 0, area || 'other', intention || null, quality || null]
   );
   saveDb();
   res.status(201).json({ success: true });
@@ -26,6 +26,28 @@ router.get('/today', (_req: Request, res: Response) => {
   const db = getDb();
   const stmt = db.prepare("SELECT * FROM pomodoro_sessions WHERE date(created_at, 'localtime') = ? ORDER BY created_at DESC");
   stmt.bind([today]);
+  const sessions: any[] = [];
+  while (stmt.step()) {
+    sessions.push(stmt.getAsObject());
+  }
+  stmt.free();
+  res.json(sessions);
+});
+
+// GET /api/pomodoro/recent — recent sessions for adaptive timer
+router.get('/recent', (req: Request, res: Response) => {
+  const days = parseInt(req.query.days as string) || 7;
+  const db = getDb();
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - days);
+  const cutoffStr = toDateStr(cutoff);
+  
+  const stmt = db.prepare(`
+    SELECT * FROM pomodoro_sessions 
+    WHERE completed = 1 AND quality IS NOT NULL AND date(created_at, 'localtime') >= ?
+    ORDER BY created_at DESC
+  `);
+  stmt.bind([cutoffStr]);
   const sessions: any[] = [];
   while (stmt.step()) {
     sessions.push(stmt.getAsObject());

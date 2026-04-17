@@ -40,6 +40,21 @@ export interface AreaColor {
   color: string;
 }
 
+export type FocusQuality = 1 | 2 | 3 | 4 | 5;
+
+export interface FocusSession {
+  id: string;
+  startTime: string;
+  endTime: string;
+  durationMinutes: number;
+  plannedDurationMinutes: number;
+  area: string;
+  intention: string;
+  quality: FocusQuality | null;
+  completed: boolean;
+  tags: string[];
+}
+
 export interface StreakData {
   habitId: string;
   name: string;
@@ -103,6 +118,8 @@ export interface PomodoroSession {
   break_min: number;
   completed: number | boolean;
   area: string;
+  intention?: string;
+  quality?: number | null;
   created_at: string;
 }
 

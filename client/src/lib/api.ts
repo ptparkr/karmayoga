@@ -4,6 +4,7 @@ import type {
   ConsistencyData,
   DeleteResponse,
   FocusAnalytics,
+  FocusQuality,
   Habit,
   PomodoroSession,
   StreakData,
@@ -53,9 +54,10 @@ export const api = {
   getConsistency: () => request<ConsistencyData>('/dashboard/consistency'),
 
   // Pomodoro
-  logSession: (focus_min: number, break_min: number, completed: boolean, area?: string) =>
-    request<{ success: true }>('/pomodoro', { method: 'POST', body: JSON.stringify({ focus_min, break_min, completed, area }) }),
+  logSession: (focus_min: number, break_min: number, completed: boolean, area?: string, intention?: string, quality?: FocusQuality) =>
+    request<{ success: true }>('/pomodoro', { method: 'POST', body: JSON.stringify({ focus_min, break_min, completed, area, intention, quality }) }),
   getTodaySessions: () => request<PomodoroSession[]>('/pomodoro/today'),
+  getRecentSessions: (days = 7) => request<PomodoroSession[]>(`/pomodoro/recent?days=${days}`),
   getFocusAnalytics: (startDate?: string, endDate?: string) => {
     const params = new URLSearchParams();
     if (startDate) params.append('startDate', startDate);

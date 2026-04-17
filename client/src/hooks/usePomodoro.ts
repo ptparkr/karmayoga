@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { api } from '../lib/api';
 import { storageGet, storageGetString, storageRemove, storageSet, storageSetString } from '../lib/storage';
-import type { FocusAnalytics, PomodoroSession } from '../types';
+import type { FocusAnalytics, FocusQuality, PomodoroSession } from '../types';
 
-export type Phase = 'idle' | 'focus' | 'short_break' | 'long_break';
+export type Phase = 'idle' | 'focus' | 'rating' | 'short_break' | 'long_break';
 
 interface Preset {
   focus: number;      // minutes
@@ -29,6 +29,7 @@ export function usePomodoro() {
   const [cycle, setCycle] = useState(() => storageGet<number>('pomodoro_cycle', 1));
   const [todaySessions, setTodaySessions] = useState<PomodoroSession[]>([]);
   const [selectedArea, setSelectedArea] = useState<string>(() => storageGetString('pomodoro_area', 'mind'));
+  const [intention, setIntention] = useState<string>(() => storageGetString('pomodoro_intention', ''));
   const [focusAnalytics, setFocusAnalytics] = useState<FocusAnalytics | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -97,12 +98,13 @@ export function usePomodoro() {
     storageSetString('pomodoro_running', String(isRunning));
     storageSet('pomodoro_cycle', cycle);
     storageSetString('pomodoro_area', selectedArea);
+    storageSetString('pomodoro_intention', intention);
     if (endTime) {
       storageSet('pomodoro_endTime', endTime);
     } else {
       storageRemove('pomodoro_endTime');
     }
-  }, [presetKey, phase, remainingSeconds, totalSeconds, isRunning, cycle, selectedArea, endTime]);
+  }, [presetKey, phase, remainingSeconds, totalSeconds, isRunning, cycle, selectedArea, intention, endTime]);
 
   // Timer tick - using timestamp-based calculation to avoid drift
   useEffect(() => {
@@ -123,38 +125,43 @@ export function usePomodoro() {
     if (intervalRef.current) clearInterval(intervalRef.current);
 
     if (phase === 'focus') {
-      // Log the completed focus session
-      api.logSession(preset.focus, preset.shortBreak, true, selectedArea)
-        .then(() => {
-          api.getTodaySessions().then(setTodaySessions);
-          api.getFocusAnalytics().then(setFocusAnalytics);
-        })
-        .catch(console.error);
-
-      // Determine next break
-      if (cycle >= preset.cyclesBeforeLong) {
-        setPhase('long_break');
-        const secs = preset.longBreak * 60;
-        setTotalSeconds(secs);
-        setRemainingSeconds(secs);
-        setCycle(1);
-      } else {
-        setPhase('short_break');
-        const secs = preset.shortBreak * 60;
-        setTotalSeconds(secs);
-        setRemainingSeconds(secs);
-      }
+      // Enter rating phase to get quality rating before logging session
+      setPhase('rating');
     } else {
       // Break ended → back to focus
       if (phase === 'short_break') {
         setCycle(c => c + 1);
       }
-      setPhase('focus');
+      setPhase('idle');
       const secs = preset.focus * 60;
       setTotalSeconds(secs);
       setRemainingSeconds(secs);
     }
-  }, [phase, cycle, preset, selectedArea]);
+  }, [phase, cycle, preset]);
+
+  const submitRating = useCallback((quality: FocusQuality) => {
+    // Log the completed focus session with quality
+    api.logSession(preset.focus, preset.shortBreak, true, selectedArea, intention, quality)
+      .then(() => {
+        api.getTodaySessions().then(setTodaySessions);
+        api.getFocusAnalytics().then(setFocusAnalytics);
+      })
+      .catch(console.error);
+
+    // Determine next break
+    if (cycle >= preset.cyclesBeforeLong) {
+      setPhase('long_break');
+      const secs = preset.longBreak * 60;
+      setTotalSeconds(secs);
+      setRemainingSeconds(secs);
+      setCycle(1);
+    } else {
+      setPhase('short_break');
+      const secs = preset.shortBreak * 60;
+      setTotalSeconds(secs);
+      setRemainingSeconds(secs);
+    }
+  }, [cycle, preset, selectedArea, intention]);
 
   // Handle Phase End when timer reaches zero
   useEffect(() => {
@@ -207,10 +214,15 @@ export function usePomodoro() {
 
   const phaseLabel = phase === 'idle' ? 'Ready'
     : phase === 'focus' ? 'Focus'
+    : phase === 'rating' ? 'Rate Session'
     : phase === 'short_break' ? 'Short Break'
     : 'Long Break';
 
   const sessionLabel = `Cycle ${cycle} of ${preset.cyclesBeforeLong}`;
+
+  const setIntentionText = useCallback((text: string) => {
+    setIntention(text);
+  }, []);
 
   return {
     presetKey,
@@ -230,6 +242,9 @@ export function usePomodoro() {
     presets: Object.keys(PRESETS).map(Number),
     selectedArea,
     setSelectedArea,
+    intention,
+    setIntentionText,
+    submitRating,
     focusAnalytics,
   };
 }

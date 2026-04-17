@@ -43,13 +43,20 @@ export async function initDb(): Promise<Database> {
       break_min   INTEGER NOT NULL,
       completed   INTEGER NOT NULL DEFAULT 0,
       area        TEXT NOT NULL DEFAULT 'other',
+      intention  TEXT,
+      quality    INTEGER,
       created_at  TEXT NOT NULL DEFAULT (datetime('now'))
     )
   `);
 
-  // Migration: add area column to pomodoro_sessions if missing
+  // Migration: add intention and quality columns if missing
   try {
-    db.run('ALTER TABLE pomodoro_sessions ADD COLUMN area TEXT NOT NULL DEFAULT "other"');
+    db.run('ALTER TABLE pomodoro_sessions ADD COLUMN intention TEXT');
+  } catch (e) {
+    // Column likely already exists
+  }
+  try {
+    db.run('ALTER TABLE pomodoro_sessions ADD COLUMN quality INTEGER');
   } catch (e) {
     // Column likely already exists
   }
