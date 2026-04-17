@@ -1,18 +1,21 @@
 import { useState, useEffect, useCallback } from 'react';
 import { api } from '../lib/api';
-import type { AreaSummary, ConsistencyData, StreakData, WeeklyData } from '../types';
+import type { AreaSummary, ConsistencyData, FocusAnalytics, StreakData, WeeklyData } from '../types';
 
 export function useDashboard() {
   const [streaks, setStreaks] = useState<StreakData[]>([]);
   const [weekly, setWeekly] = useState<WeeklyData | null>(null);
   const [areas, setAreas] = useState<AreaSummary[]>([]);
   const [consistency, setConsistency] = useState<ConsistencyData | null>(null);
+  const [focusAnalytics, setFocusAnalytics] = useState<FocusAnalytics | null>(null);
+  const [focusError, setFocusError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
+    setFocusError(null);
 
     try {
       const [s, w, a, c] = await Promise.all([
@@ -28,6 +31,16 @@ export function useDashboard() {
     } catch (err) {
       console.error('Failed to load dashboard:', err);
       setError(err instanceof Error ? err.message : 'Failed to load dashboard data.');
+    }
+
+    try {
+      const today = new Date();
+      const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+      const focus = await api.getFocusAnalytics(todayStr, todayStr);
+      setFocusAnalytics(focus);
+    } catch (err) {
+      console.error('Failed to load focus analytics:', err);
+      setFocusError(err instanceof Error ? err.message : 'Failed to load focus analytics.');
     } finally {
       setLoading(false);
     }
@@ -53,6 +66,8 @@ export function useDashboard() {
     weekly,
     areas,
     consistency,
+    focusAnalytics,
+    focusError,
     loading,
     error,
     totalCurrentStreak,

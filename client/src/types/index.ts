@@ -105,3 +105,33 @@ export interface PomodoroSession {
   area: string;
   created_at: string;
 }
+
+export interface Target {
+  id: string;
+  title: string;
+  deadline: string;
+  description?: string;
+  color: string;
+  isPrimary: boolean;
+  completed: boolean;
+  createdAt: string;
+  completedAt?: string | null;
+}
+
+export interface TargetDraft {
+  title: string;
+  deadline: string;
+  description?: string;
+  color: string;
+  isPrimary: boolean;
+}
+
+export interface WeeklyReportPreview {
+  totalFocusMinutes: number;
+  topFocusArea: string | null;
+  strongestHabit: string | null;
+  currentBestStreak: number;
+  consistencyPercentage: number;
+  weakestArea: string | null;
+  recommendations: string[];
+}

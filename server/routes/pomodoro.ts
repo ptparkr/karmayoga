@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { getDb, saveDb } from '../db';
-import { toDateStr, getDaysAgo, getCurrentTimeInfo } from '../utils/time';
+import { toDateStr, getCurrentTimeInfo } from '../utils/time';
 
 const router = Router();
 
@@ -57,15 +57,14 @@ router.get('/analytics', (req: Request, res: Response) => {
     daysCount = 7;
   }
 
-  // Focus by Area (last 30 days from rangeStart)
-  const thirtyDaysAgo = getDaysAgo(30);
+  // Focus by Area for the requested range
   const areaStmt = db.prepare(`
     SELECT area, SUM(focus_min) as total_min
     FROM pomodoro_sessions
-    WHERE completed = 1 AND date(created_at) >= ?
+    WHERE completed = 1 AND date(created_at, 'localtime') >= ? AND date(created_at, 'localtime') <= ?
     GROUP BY area
   `);
-  areaStmt.bind([thirtyDaysAgo]);
+  areaStmt.bind([rangeStart, rangeEnd]);
   const byArea: any[] = [];
   while (areaStmt.step()) {
     byArea.push(areaStmt.getAsObject());
