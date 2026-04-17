@@ -3683,6 +3683,16 @@ input[type="color"]::-moz-color-swatch {
   overflow: hidden;
 }
 
+.weekly-report.dashboard-report {
+  max-height: 350px;
+  overflow-y: auto;
+}
+
+.dashboard-bottom-grid .weekly-report {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
 .weekly-report-header {
   display: flex;
   align-items: center;

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { api } from '../lib/api';
-import type { PomodoroSession, HabitWithSchedule, AreaSummary, ConsistencyData, StreakData, WheelAxisId } from '../types';
+import type { PomodoroSession, HabitWithSchedule, AreaSummary, ConsistencyData, StreakData, WheelAxisId, HealthCheckin } from '../types';
 import type { 
   MomentumDataPoint, 
   PeakHourCell, 
@@ -37,6 +37,8 @@ export function useAnalytics() {
   const [peakHours, setPeakHours] = useState<PeakHourCell[][]>([]);
   const [areaBalance, setAreaBalance] = useState<AreaBalanceData[]>([]);
   const [weeklyReport, setWeeklyReport] = useState<WeeklyReportData | null>(null);
+  const [healthCheckins, setHealthCheckins] = useState<HealthCheckin[]>([]);
+  const [habitEntries, setHabitEntries] = useState<{ habitId: string; date: string; completed: boolean }[]>([]);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -79,6 +81,29 @@ export function useAnalytics() {
       } catch (e) {
         console.warn('Failed to fetch streaks:', e);
       }
+
+      // Fetch health checkins for weekly report
+      let healthData: HealthCheckin[] = [];
+      try {
+        healthData = await api.getHealthCheckins(30);
+        setHealthCheckins(healthData);
+      } catch (e) {
+        console.warn('Failed to fetch health checkins:', e);
+      }
+
+      // Build habit entries from checkins data
+      const entries: { habitId: string; date: string; completed: boolean }[] = [];
+      for (const h of habitsData) {
+        try {
+          const dates = await api.getCheckins(h.id);
+          for (const date of dates) {
+            entries.push({ habitId: h.id, date, completed: true });
+          }
+        } catch {
+          // Ignore individual habit checkin errors
+        }
+      }
+      setHabitEntries(entries);
 
       setSessions(sessionsData);
       setHabits(habitsData.map(h => ({
@@ -127,16 +152,16 @@ export function useAnalytics() {
         console.warn('Failed to load wheel data:', err);
       }
 
-      // Build weekly report
+      // Build weekly report with health and habit data
       const report = buildWeeklyReport(
         sessionsData,
-        [],
+        healthCheckins,
         habitsData.map(h => ({ ...h, targetDays: JSON.parse(h.target_days || '[]') })),
-        [],
+        habitEntries,
         wheelAxes
       );
       setWeeklyReport(report);
-      console.log('Analytics: built weekly report');
+      console.log('Analytics: built weekly report with health data');
     } catch (err) {
       console.error('Analytics load error:', err);
       setError(err instanceof Error ? err.message : 'Failed to load analytics');

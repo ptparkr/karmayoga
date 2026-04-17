@@ -1,14 +1,13 @@
-import { useMemo } from 'react';
 import { useDashboard } from '../hooks/useDashboard';
 import { useTargets } from '../hooks/useTargets';
 import { useAreaColors } from '../hooks/useAreaColors';
+import { useAnalytics } from '../hooks/useAnalytics';
 import { StreakCard } from '../components/StreakCard';
 import { HabitQuickCheck } from '../components/dashboard/HabitQuickCheck';
 import { WeeklyHabitGrid } from '../components/dashboard/WeeklyHabitGrid';
 import { FocusAreaRing } from '../components/dashboard/FocusAreaRing';
-import { WeeklyReportPreview } from '../components/dashboard/WeeklyReportPreview';
+import { WeeklyReport } from '../components/analytics/WeeklyReport';
 import { TargetsPanel } from '../components/dashboard/TargetsPanel';
-import { buildWeeklyReportPreview } from '../lib/dashboard';
 
 export function DashboardPage() {
   const {
@@ -27,16 +26,12 @@ export function DashboardPage() {
   } = useDashboard();
   const { getColor } = useAreaColors();
   const { targets, addTarget, updateTarget, removeTarget, completeTarget, setPrimary } = useTargets();
+  const { weeklyReport, loading: analyticsLoading } = useAnalytics();
 
   const today = new Date();
   const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
 
-  const report = useMemo(
-    () => buildWeeklyReportPreview(streaks, consistency, areas, focusAnalytics),
-    [streaks, consistency, areas, focusAnalytics],
-  );
-
-  if (loading) {
+  if (loading || analyticsLoading) {
     return (
       <div className="app-main">
         <div className="empty-state"><span className="empty-icon" style={{ animation: 'pulse 1.5s infinite' }}>...</span></div>
@@ -89,7 +84,7 @@ export function DashboardPage() {
 
       <div className="section dashboard-bottom-grid">
         <FocusAreaRing focusAnalytics={focusAnalytics} getColor={getColor} />
-        <WeeklyReportPreview report={report} />
+        {weeklyReport && <WeeklyReport report={weeklyReport} />}
       </div>
     </div>
   );

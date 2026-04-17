@@ -153,6 +153,35 @@ export function getHealthTrends(metric: string, days: number = 30) {
   const endDate = new Date().toISOString().slice(0, 10);
   const startDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
   
+  // Return all checkins if metric is 'all'
+  if (metric === 'all') {
+    const stmt = db.prepare(`
+      SELECT * FROM health_checkins 
+      WHERE date BETWEEN ? AND ?
+      ORDER BY date ASC
+    `);
+    stmt.bind([startDate, endDate]);
+    
+    const results: any[] = [];
+    while (stmt.step()) {
+      const row = stmt.getAsObject() as any;
+      results.push({
+        id: row.id,
+        date: row.date,
+        hrv: row.hrv,
+        sleepHours: row.sleep_hours,
+        sleepQuality: row.sleep_quality,
+        restingHR: row.resting_hr,
+        steps: row.steps,
+        energyLevel: row.energy_level,
+        moodScore: row.mood_score,
+        notes: row.notes || '',
+      });
+    }
+    stmt.free();
+    return results;
+  }
+  
   const metricMap: Record<string, string> = {
     hrv: 'hrv',
     sleep: 'sleep_hours',
@@ -323,6 +352,12 @@ router.post('/markers', (req, res) => {
 
 router.get('/markers', (_req, res) => {
   const result = getMarkers();
+  res.json(result);
+});
+
+router.get('/checkins', (req, res) => {
+  const days = parseInt(req.query.days as string) || 30;
+  const result = getHealthTrends('all', days);
   res.json(result);
 });
 

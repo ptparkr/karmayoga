@@ -92,6 +92,7 @@ export const api = {
 
   // Health
   getTodayCheckin: () => request<TodayCheckinStatus>('/health/today'),
+  getHealthCheckins: (days = 30) => request<HealthCheckin[]>(`/health/checkins?days=${days}`),
   createCheckin: (checkin: Partial<HealthCheckin>) =>
     request<HealthCheckin>('/health/checkin', { method: 'POST', body: JSON.stringify(checkin) }),
   getHealthTrends: (metric: string, days = 30) =>
