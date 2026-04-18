@@ -8,6 +8,7 @@ const links = [
   { to: '/health', label: 'Health' },
   { to: '/wheel', label: 'Wheel' },
   { to: '/analytics', label: 'Analytics' },
+  { to: '/settings', label: 'Settings' },
 ];
 
 export function Sidebar({ isCollapsed, setIsCollapsed }: { isCollapsed: boolean; setIsCollapsed: (v: boolean) => void }) {

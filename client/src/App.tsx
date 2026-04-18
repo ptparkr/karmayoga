@@ -8,6 +8,7 @@ import { PomodoroPage } from './pages/PomodoroPage';
 import { HealthPage } from './pages/HealthPage';
 import { WheelPage } from './pages/WheelPage';
 import { AnalyticsPage } from './pages/AnalyticsPage';
+import { SettingsPage } from './pages/SettingsPage';
 
 export function App() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -24,6 +25,7 @@ export function App() {
             <Route path="/health" element={<HealthPage />} />
             <Route path="/wheel" element={<WheelPage />} />
             <Route path="/analytics" element={<AnalyticsPage />} />
+            <Route path="/settings" element={<SettingsPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </main>
