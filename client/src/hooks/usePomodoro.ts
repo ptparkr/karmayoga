@@ -53,13 +53,45 @@ export function usePomodoro() {
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const preset = PRESETS[presetKey];
 
+  const POMODORO_CACHE_KEY = 'pomodoro_sessions_cache';
+const POMODORO_CACHE_TTL = 2 * 60 * 1000; // 2 minutes
+
+interface PomodoroCache {
+  sessions: PomodoroSession[];
+  analytics: FocusAnalytics | null;
+  timestamp: number;
+}
+
+function getPomodoroCached(): PomodoroCache | null {
+  try {
+    const raw = localStorage.getItem(POMODORO_CACHE_KEY);
+    if (!raw) return null;
+    const cached = JSON.parse(raw) as PomodoroCache;
+    if (Date.now() - cached.timestamp > POMODORO_CACHE_TTL) return null;
+    return cached;
+  } catch {
+    return null;
+  }
+}
+
+function setPomodoroCached(data: PomodoroCache): void {
+  try {
+    localStorage.setItem(POMODORO_CACHE_KEY, JSON.stringify(data));
+  } catch {}
+}
+
   // Load today's sessions and analytics
   useEffect(() => {
     let cancelled = false;
 
     const load = async () => {
-      setLoading(true);
-      setError(null);
+      // Try cache first
+      const cached = getPomodoroCached();
+      if (cached) {
+        setTodaySessions(cached.sessions);
+        setFocusAnalytics(cached.analytics);
+        setLoading(false);
+      }
 
       try {
         const [sessions, analytics] = await Promise.all([
@@ -70,6 +102,7 @@ export function usePomodoro() {
         if (cancelled) return;
         setTodaySessions(sessions);
         setFocusAnalytics(analytics);
+        setPomodoroCached({ sessions, analytics, timestamp: Date.now() });
       } catch (err) {
         console.error(err);
         if (!cancelled) {

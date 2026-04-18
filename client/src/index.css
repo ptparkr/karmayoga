@@ -3998,3 +3998,145 @@ input[type="color"]::-moz-color-swatch {
     flex-wrap: wrap;
   }
 }
+
+/* ═══════════════════════════════════════════
+   SHIMMER LOADING COMPONENTS
+   ═══════════════════════════════════════════ */
+
+.shimmer-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.shimmer-gradient {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    110deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.04) 20%,
+    rgba(255, 255, 255, 0.08) 40%,
+    rgba(255, 255, 255, 0.04) 60%,
+    transparent 100%
+  );
+  animation: shimmer-sweep 1.8s ease-in-out infinite;
+}
+
+.shimmer-card {
+  transition: all var(--duration-normal) var(--ease-out);
+}
+
+.shimmer-card.glow {
+  border-color: rgba(0, 255, 204, 0.25);
+  box-shadow: 0 0 20px rgba(0, 255, 204, 0.1);
+}
+
+.shimmer-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 48px;
+}
+
+.shimmer-stat-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.shimmer-timer-ring {
+  margin: var(--gap-xl) 0;
+}
+
+@keyframes shimmer-sweep {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* Stat card glow enhancement */
+.stat-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.stat-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    circle at 30% 30%,
+    rgba(255, 255, 255, 0.03) 0%,
+    transparent 60%
+  );
+  pointer-events: none;
+}
+
+.stat-card:hover::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: inset 0 0 30px rgba(0, 255, 204, 0.05);
+  pointer-events: none;
+}
+
+/* Enhanced gradient text glow */
+.stat-value, .target-countdown.large, .score-value, .momentum-number, .longevity-score .score-value {
+  position: relative;
+  background: linear-gradient(135deg, #fff 0%, var(--accent) 50%, rgba(0, 255, 204, 0.8) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  filter: drop-shadow(0 0 20px rgba(0, 255, 204, 0.3));
+}
+
+/* Animated glow pulse for key metrics */
+@keyframes glow-pulse {
+  0%, 100% { filter: drop-shadow(0 0 20px rgba(0, 255, 204, 0.3)); }
+  50% { filter: drop-shadow(0 0 30px rgba(0, 255, 204, 0.5)); }
+}
+
+.stat-value.highlight {
+  animation: glow-pulse 3s ease-in-out infinite;
+}
+
+/* Card inner glow effect */
+.card {
+  position: relative;
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(
+    ellipse at 50% 0%,
+    rgba(0, 255, 204, 0.05) 0%,
+    transparent 70%
+  );
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Premium button hover glow */
+.btn-primary {
+  position: relative;
+}
+
+.btn-primary::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  background: inherit;
+  filter: blur(12px);
+  opacity: 0;
+  transition: opacity var(--duration-normal) var(--ease-out);
+  z-index: -1;
+}
+
+.btn-primary:hover::after {
+  opacity: 0.4;
+}

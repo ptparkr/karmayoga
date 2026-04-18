@@ -8,6 +8,7 @@ import { WeeklyHabitGrid } from '../components/dashboard/WeeklyHabitGrid';
 import { FocusAreaRing } from '../components/dashboard/FocusAreaRing';
 import { WeeklyReport } from '../components/analytics/WeeklyReport';
 import { TargetsPanel } from '../components/dashboard/TargetsPanel';
+import { DashboardShimmer } from '../components/Shimmer';
 
 export function DashboardPage() {
   const {
@@ -31,12 +32,8 @@ export function DashboardPage() {
   const today = new Date();
   const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
 
-  if (loading || analyticsLoading) {
-    return (
-      <div className="app-main">
-        <div className="empty-state"><span className="empty-icon" style={{ animation: 'pulse 1.5s infinite' }}>...</span></div>
-      </div>
-    );
+  if (loading && streaks.length === 0) {
+    return <DashboardShimmer />;
   }
 
   return (

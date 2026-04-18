@@ -8,6 +8,7 @@ import { SessionLog } from '../components/SessionLog';
 import { useAreaColors } from '../hooks/useAreaColors';
 import { api } from '../lib/api';
 import { getRecommendedDuration } from '../lib/analytics';
+import { PomodoroShimmer } from '../components/Shimmer';
 
 export function PomodoroPage() {
   const {
@@ -38,6 +39,10 @@ export function PomodoroPage() {
     : null;
     
   const canStart = phase === 'idle' || phase === 'rating';
+
+  if (loading && todaySessions.length === 0) {
+    return <PomodoroShimmer />;
+  }
 
   return (
     <div className="app-main">

@@ -40,6 +40,39 @@ router.post('/', (req: Request, res: Response) => {
   res.status(201).json(habit);
 });
 
+// GET /api/habits/all/checkins — batch fetch ALL habits and their checkins in one call
+router.get('/all/checkins', (_req: Request, res: Response) => {
+  const db = getDb();
+  
+  // Get all habits
+  const habitsStmt = db.prepare('SELECT id, name, area, target_days FROM habits ORDER BY area, created_at');
+  const habits: any[] = [];
+  while (habitsStmt.step()) {
+    habits.push(habitsStmt.getAsObject());
+  }
+  habitsStmt.free();
+  
+  // Get all checkins grouped by habit_id
+  const checkinsStmt = db.prepare('SELECT habit_id, date FROM checkins ORDER BY habit_id, date');
+  const checkinsMap: Record<string, string[]> = {};
+  while (checkinsStmt.step()) {
+    const row = checkinsStmt.getAsObject() as { habit_id: string; date: string };
+    if (!checkinsMap[row.habit_id]) {
+      checkinsMap[row.habit_id] = [];
+    }
+    checkinsMap[row.habit_id].push(row.date);
+  }
+  checkinsStmt.free();
+  
+  // Build response with checkins embedded
+  const results = habits.map(habit => ({
+    ...habit,
+    checkins: checkinsMap[habit.id] || [],
+  }));
+  
+  res.json(results);
+});
+
 // DELETE /api/habits/:id — delete habit + cascade check-ins
 router.delete('/:id', (req: Request, res: Response) => {
   const { id } = req.params;

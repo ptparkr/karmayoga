@@ -63,6 +63,8 @@ export const api = {
     request<{ success: boolean; targetDays: number[] }>(`/habits/${id}/target-days`, { method: 'PUT', body: JSON.stringify({ targetDays }) }),
   getCheckinsInRange: (id: string, start: string, end: string) =>
     request<string[]>(`/habits/${id}/checkins/range?start=${start}&end=${end}`),
+  // Batch fetch ALL habits with checkins (avoids N+1)
+  getAllHabitsWithCheckins: () => request<{ id: string; name: string; area: string; target_days: string; checkins: string[] }[]>('/habits/all/checkins'),
 
   // Dashboard
   getStreaks: () => request<StreakData[]>('/dashboard/streaks'),
