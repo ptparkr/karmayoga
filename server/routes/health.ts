@@ -211,7 +211,7 @@ export function getHealthTrends(metric: string, days: number = 30) {
   return results;
 }
 
-export function getLongevityScore() {
+export function getLongevityScore(age: number = 25) {
   const db = getDb();
   const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
   
@@ -248,7 +248,7 @@ export function getLongevityScore() {
   }
   stmt.free();
   
-  return calculateLongevity(input);
+  return calculateLongevity(input, age);
 }
 
 // Biological markers
@@ -339,8 +339,9 @@ router.get('/trends/:metric', (req, res) => {
   res.json(result);
 });
 
-router.get('/longevity', (_req, res) => {
-  const result = getLongevityScore();
+router.get('/longevity', (req, res) => {
+  const age = parseInt(req.query.age as string) || 25;
+  const result = getLongevityScore(age);
   res.json(result);
 });
 

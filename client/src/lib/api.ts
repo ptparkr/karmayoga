@@ -99,7 +99,7 @@ export const api = {
     request<HealthCheckin>('/health/checkin', { method: 'POST', body: JSON.stringify(checkin) }),
   getHealthTrends: (metric: string, days = 30) =>
     request<HealthTrend[]>(`/health/trends/${metric}?days=${days}`),
-  getLongevity: () => request<LongevityScore>('/health/longevity'),
+  getLongevity: (age?: number) => request<LongevityScore>(`/health/longevity${age ? `?age=${age}` : ''}`),
   createMarker: (marker: Partial<BiologicalMarker>) =>
     request<BiologicalMarker>('/health/markers', { method: 'POST', body: JSON.stringify(marker) }),
   getMarkers: () => request<BiologicalMarker[]>('/health/markers'),

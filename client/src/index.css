@@ -4,6 +4,7 @@
    ═══════════════════════════════════════════ */
 
 :root {
+  color-scheme: dark;
   /* Surface (Premium Glassmorphism - Deep Midnight Blue) */
   --bg-primary: #050814;
   --bg-secondary: rgba(13, 25, 48, 0.45);

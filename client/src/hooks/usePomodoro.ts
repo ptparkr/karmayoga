@@ -145,7 +145,7 @@ function setPomodoroCached(data: PomodoroCache): void {
       intervalRef.current = setInterval(() => {
         const remaining = Math.max(0, Math.floor((endTime - Date.now()) / 1000));
         setRemainingSeconds(remaining);
-      }, 100);
+      }, 1000);
     }
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);

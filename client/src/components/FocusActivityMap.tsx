@@ -41,7 +41,9 @@ export function FocusActivityMap({ analytics, loading }: Props) {
       days = 366;
     }
 
-    const formatDate = (date: Date) => date.toISOString().split('T')[0];
+    const formatDate = (date: Date) => {
+      return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+    };
     return { start: formatDate(start), end: formatDate(end), days };
   }, [timeframe]);
 

@@ -10,6 +10,18 @@ interface HealthTrends {
   mood: HealthTrend[];
 }
 
+function getAgeFromDOB(dob: string) {
+  if (!dob) return 25;
+  const birthDate = new Date(dob);
+  const today = new Date();
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const m = today.getMonth() - birthDate.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+    age--;
+  }
+  return Math.max(0, age);
+}
+
 export function useHealth() {
   const [todayStatus, setTodayStatus] = useState<TodayCheckinStatus>({
     hasCheckedIn: false,
@@ -25,9 +37,20 @@ export function useHealth() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
+      let age = 25;
+      const settingsRaw = localStorage.getItem('karma_yoga_settings');
+      if (settingsRaw) {
+        try {
+          const settings = JSON.parse(settingsRaw);
+          if (settings.dateOfBirth) {
+            age = getAgeFromDOB(settings.dateOfBirth);
+          }
+        } catch(e) {}
+      }
+
       const [status, lon, tr, mk] = await Promise.all([
         api.getTodayCheckin(),
-        api.getLongevity(),
+        api.getLongevity(age),
         Promise.all([
           api.getHealthTrends('hrv', 30),
           api.getHealthTrends('sleep', 30),
