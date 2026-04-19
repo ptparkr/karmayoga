@@ -39,6 +39,7 @@ export function AnalyticsPage() {
     consistency,
     streaks,
     wheelAxes,
+    healthCheckins,
     loading,
     error,
     refresh,
@@ -160,11 +161,21 @@ export function AnalyticsPage() {
         {activeTab === 'health' && (
           <div className="analytics-health">
             <div className="analytics-section">
-              <h3 className="analytics-section-title">Track Your Health</h3>
-              <div className="analytics-empty">
-                <p>Log daily health check-ins to see correlations.</p>
-                <a href="/health" className="btn btn-ghost">Go to Health →</a>
-              </div>
+              <h3 className="analytics-section-title">Health Metrics</h3>
+              {healthCheckins && healthCheckins.length > 0 ? (
+                <>
+                  <HealthMetricsPreview checkins={healthCheckins} />
+                  <div className="analytics-section" style={{ marginTop: 'var(--gap-xl)' }}>
+                    <h3 className="analytics-section-title">Health Correlations</h3>
+                    <HealthCorrelations checkins={healthCheckins} sessions={sessions} />
+                  </div>
+                </>
+              ) : (
+                <div className="analytics-empty">
+                  <p>Log daily health check-ins to see correlations.</p>
+                  <a href="/health" className="btn btn-ghost">Go to Health →</a>
+                </div>
+              )}
             </div>
           </div>
         )}

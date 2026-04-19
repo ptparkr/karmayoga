@@ -72,7 +72,7 @@ export function PeakHoursChart({ grid }: Props) {
           {DAY_LABELS.map((day, dayIdx) => (
             <div key={day} className="peak-hours-row">
               <span className="peak-hours-day-label">{day}</span>
-              {[0, 3, 6, 9, 12, 15, 18, 21].map(h => {
+              {[...Array(24).keys()].map(h => {
                 const cell = grid[dayIdx]?.[h];
                 const mins = cell?.avgMinutes || 0;
                 return (

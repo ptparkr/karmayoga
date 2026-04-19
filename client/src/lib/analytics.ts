@@ -2,6 +2,10 @@ import type { PomodoroSession, FocusSession, HealthCheckin, Habit, HabitWithSche
 
 type WheelAxis = { id: string; currentScore: number; targetScore: number };
 
+export function toLocalDateString(date: Date): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
 export function getRecommendedDuration(sessions: PomodoroSession[]): 25 | 45 | 90 {
   if (sessions.length < 3) return 25;
   
@@ -30,7 +34,7 @@ export function aggregateByDay(sessions: PomodoroSession[]): Map<string, Heatmap
   
   for (const s of sessions) {
     if (!s.completed) continue;
-    const date = s.created_at?.split('T')[0] || '';
+    const date = s.created_at ? toLocalDateString(new Date(s.created_at)) : '';
     if (!date) continue;
     
     const existing = map.get(date) || { date, totalMinutes: 0, qualityAvg: null, sessionCount: 0 };
@@ -58,7 +62,7 @@ export function momentumTimeSeries(sessions: PomodoroSession[]): MomentumDataPoi
   
   for (const s of sessions) {
     if (!s.completed) continue;
-    const date = s.created_at?.split('T')[0] || '';
+    const date = s.created_at ? toLocalDateString(new Date(s.created_at)) : '';
     if (!date) continue;
     
     const weight = (s.quality ?? 3) / 5;
@@ -72,7 +76,7 @@ export function momentumTimeSeries(sessions: PomodoroSession[]): MomentumDataPoi
   const cur = new Date(allDates[0]);
   const end = new Date();
   while (cur <= end) {
-    const d = cur.toISOString().slice(0, 10);
+    const d = toLocalDateString(cur);
     filled.push({ date: d, rawMinutes: byDay.get(d) || 0, score: 0 });
     cur.setDate(cur.getDate() + 1);
   }
@@ -172,7 +176,7 @@ export function areaBalanceByAreas(sessions: PomodoroSession[], areas: string[],
     }
     
     result.push({
-      weekStart: weekStart.toISOString().slice(0, 10),
+      weekStart: toLocalDateString(weekStart),
       data: totals
     });
   }
@@ -225,7 +229,7 @@ export function areaBalanceByWeek(sessions: PomodoroSession[], weeks = 8): AreaB
     }
     
     result.push({
-      weekStart: weekStart.toISOString().slice(0, 10),
+      weekStart: toLocalDateString(weekStart),
       health: totals.health || 0,
       learning: totals.learning || 0,
       social: totals.social || 0,
@@ -257,7 +261,7 @@ export function sleepFocusCorrelation(
   const focusByDate = new Map<string, { total: number; quality: number; count: number }>();
   for (const s of sessions) {
     if (!s.completed || !s.created_at) continue;
-    const date = s.created_at.split('T')[0];
+    const date = toLocalDateString(new Date(s.created_at));
     const existing = focusByDate.get(date) || { total: 0, quality: 0, count: 0 };
     focusByDate.set(date, {
       total: existing.total + (s.focus_min || 0),
@@ -351,7 +355,7 @@ export function habitAreaCompletionByWeek(
       const day = new Date(weekStart);
       day.setDate(weekStart.getDate() + d);
       const dayOfWeek = day.getDay();
-      const dateStr = day.toISOString().slice(0, 10);
+      const dateStr = toLocalDateString(day);
       
       for (const h of areaHabits) {
         const targetDays = h.targetDays || [];
@@ -363,7 +367,7 @@ export function habitAreaCompletionByWeek(
     }
     
     result.push({
-      weekStart: weekStart.toISOString().slice(0, 10),
+      weekStart: toLocalDateString(weekStart),
       areaId,
       rate: scheduled > 0 ? Math.round((completed / scheduled) * 100) / 100 : 0
     });
@@ -433,12 +437,12 @@ export function buildWeeklyReport(
   const weekStart = new Date(now);
   weekStart.setDate(now.getDate() - now.getDay());
   weekStart.setHours(0, 0, 0, 0);
-  const weekStartStr = weekStart.toISOString().slice(0, 10);
+  const weekStartStr = toLocalDateString(weekStart);
   
   // Focus stats
   const weekSessions = sessions.filter(s => {
     if (!s.created_at) return false;
-    return s.created_at.split('T')[0] >= weekStartStr;
+    return toLocalDateString(new Date(s.created_at)) >= weekStartStr;
   });
   const completed = weekSessions.filter(s => s.completed);
   const totalFocusMinutes = weekSessions.reduce((sum, s) => sum + (s.focus_min || 0), 0);
@@ -569,7 +573,7 @@ export function buildWeeklyReport(
   
   return {
     weekStart: weekStartStr,
-    weekEnd: now.toISOString().slice(0, 10),
+    weekEnd: toLocalDateString(now),
     totalFocusMinutes,
     focusByArea,
     completedSessions: completed.length,

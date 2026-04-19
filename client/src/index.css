@@ -3207,6 +3207,7 @@ input[type="color"]::-moz-color-swatch {
   background: var(--accent-gradient);
   color: #000;
   box-shadow: 0 0 20px var(--shadow-glow);
+  transform: translateY(-2px);
 }
 
 .analytics-content {
@@ -3241,6 +3242,13 @@ input[type="color"]::-moz-color-swatch {
   border-radius: var(--radius-lg);
   padding: var(--gap-lg);
   text-align: center;
+  transition: transform var(--duration-normal), box-shadow var(--duration-normal);
+}
+
+.analytics-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  border-color: var(--border);
 }
 
 .analytics-card-value {
@@ -3325,21 +3333,22 @@ input[type="color"]::-moz-color-swatch {
 
 .peak-hours-grid {
   display: flex;
-  gap: var(--gap-md);
+  flex-direction: column;
+  gap: var(--gap-sm);
+  overflow-x: auto;
 }
 
 .peak-hours-hours {
   display: flex;
-  flex-direction: column;
   gap: 2px;
-  padding-top: 20px;
+  padding-left: 26px; /* align with cells after day label */
 }
 
 .peak-hours-label {
-  height: 20px;
+  width: 66px;
   font-size: 9px;
   color: var(--text-muted);
-  text-align: right;
+  text-align: left;
 }
 
 .peak-hours-days {
@@ -3365,11 +3374,13 @@ input[type="color"]::-moz-color-swatch {
   width: 20px;
   height: 20px;
   border-radius: 3px;
-  transition: all var(--duration-fast);
+  transition: transform var(--duration-fast), box-shadow var(--duration-fast);
 }
 
 .peak-hours-cell:hover {
   transform: scale(1.2);
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.2);
+  z-index: 10;
 }
 
 .peak-hours-legend {
@@ -3399,6 +3410,11 @@ input[type="color"]::-moz-color-swatch {
   border: 1px solid var(--border-light);
   border-radius: var(--radius-lg);
   padding: var(--gap-lg);
+  transition: box-shadow var(--duration-normal);
+}
+
+.area-balance-chart:hover {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
 }
 
 .area-balance-bars {
@@ -3449,6 +3465,11 @@ input[type="color"]::-moz-color-swatch {
   border: 1px solid var(--border-light);
   border-radius: var(--radius-lg);
   padding: var(--gap-lg);
+  transition: box-shadow var(--duration-normal);
+}
+
+.sleep-focus-correlation:hover {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
 }
 
 .correlation-stats {

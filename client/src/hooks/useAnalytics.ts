@@ -155,7 +155,7 @@ export function useAnalytics() {
       // Build weekly report with health and habit data
       const report = buildWeeklyReport(
         sessionsData,
-        healthCheckins,
+        healthData,
         habitsData.map(h => ({ ...h, targetDays: JSON.parse(h.target_days || '[]') })),
         habitEntries,
         wheelAxes
@@ -187,6 +187,7 @@ export function useAnalytics() {
     peakHours,
     areaBalance,
     weeklyReport,
+    healthCheckins,
     loading,
     error,
     getColor,
