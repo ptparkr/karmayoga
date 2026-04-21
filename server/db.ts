@@ -126,6 +126,40 @@ export async function initDb(): Promise<Database> {
     )
   `);
 
+  // Wheel of Life tables
+  db.run(`
+    CREATE TABLE IF NOT EXISTS wheel_axes (
+      id            TEXT PRIMARY KEY,
+      current_score INTEGER NOT NULL DEFAULT 5,
+      target_score  INTEGER NOT NULL DEFAULT 8
+    )
+  `);
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS wheel_snapshots (
+      id     TEXT PRIMARY KEY,
+      date   TEXT NOT NULL,
+      scores TEXT NOT NULL
+    )
+  `);
+
+  // Seed default wheel axes if empty
+  const wheelCount = db.prepare('SELECT COUNT(*) as c FROM wheel_axes');
+  wheelCount.step();
+  const wheelAxisCount = (wheelCount.getAsObject() as any).c;
+  wheelCount.free();
+
+  if (wheelAxisCount === 0) {
+    const defaultAxes = [
+      'body', 'mind', 'soul', 'growth', 'money',
+      'mission', 'romance', 'family', 'friends', 'joy',
+    ];
+    for (const axisId of defaultAxes) {
+      db.run('INSERT INTO wheel_axes (id, current_score, target_score) VALUES (?, 5, 8)', [axisId]);
+    }
+    saveDb();
+  }
+
   return db;
 }
 

@@ -40,6 +40,8 @@ export function AnalyticsPage() {
     streaks,
     wheelAxes,
     healthCheckins,
+    sleepFocusData,
+    sleepFocusRegression,
     loading,
     error,
     refresh,
@@ -135,6 +137,15 @@ export function AnalyticsPage() {
             <div className="analytics-section">
               <h3 className="analytics-section-title">Area Balance (8 weeks)</h3>
               <AreaBalance data={areaBalance} areas={habitAreas} getColor={getAreaColor} />
+            </div>
+
+            <div className="analytics-section">
+              <h3 className="analytics-section-title">Sleep × Focus Correlation</h3>
+              <SleepFocusCorrelation
+                data={sleepFocusData}
+                regression={sleepFocusRegression}
+                hasData={sleepFocusData.length >= 2}
+              />
             </div>
 
             <div className="analytics-section">

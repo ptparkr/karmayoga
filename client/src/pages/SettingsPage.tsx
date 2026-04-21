@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 interface UserSettings {
   name: string;
   dateOfBirth: string;
+  sex: 'male' | 'female' | 'other';
   defaultPomoDuration: 25 | 45 | 90;
   shortBreak: number;
   longBreak: number;
@@ -13,6 +14,7 @@ const STORAGE_KEY = 'karma_yoga_settings';
 const DEFAULT_SETTINGS: UserSettings = {
   name: '',
   dateOfBirth: '2000-01-01',
+  sex: 'male',
   defaultPomoDuration: 25,
   shortBreak: 5,
   longBreak: 15,
@@ -77,6 +79,21 @@ export function SettingsPage() {
             value={settings.dateOfBirth}
             onChange={e => setSettings(s => ({ ...s, dateOfBirth: e.target.value }))}
           />
+        </div>
+        <div className="form-group">
+          <label>Biological Sex</label>
+          <div className="preset-buttons">
+            {(['male', 'female', 'other'] as const).map(s => (
+              <button
+                key={s}
+                type="button"
+                className={`preset-btn ${settings.sex === s ? 'active' : ''}`}
+                onClick={() => setSettings(prev => ({ ...prev, sex: s }))}
+              >
+                {s.charAt(0).toUpperCase() + s.slice(1)}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 

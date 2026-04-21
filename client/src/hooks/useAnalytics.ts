@@ -5,15 +5,16 @@ import type {
   MomentumDataPoint, 
   PeakHourCell, 
   AreaBalanceData, 
-  CorrelationPoint, 
-  EnergyMoodPoint,
+  CorrelationPoint,
   WeeklyReportData 
 } from '../lib/analytics';
 import { 
   momentumTimeSeries, 
   peakHoursGrid, 
   areaBalanceByAreas, 
-  buildWeeklyReport 
+  buildWeeklyReport,
+  sleepFocusCorrelation,
+  linearRegression
 } from '../lib/analytics';
 import { useAreaColors } from './useAreaColors';
 
@@ -39,6 +40,8 @@ export function useAnalytics() {
   const [weeklyReport, setWeeklyReport] = useState<WeeklyReportData | null>(null);
   const [healthCheckins, setHealthCheckins] = useState<HealthCheckin[]>([]);
   const [habitEntries, setHabitEntries] = useState<{ habitId: string; date: string; completed: boolean }[]>([]);
+  const [sleepFocusData, setSleepFocusData] = useState<CorrelationPoint[]>([]);
+  const [sleepFocusRegression, setSleepFocusRegression] = useState<{ slope: number; intercept: number }>({ slope: 0, intercept: 0 });
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -122,7 +125,6 @@ export function useAnalytics() {
       // Compute momentum with actual sessions data
       const mom = momentumTimeSeries(sessionsData);
       setMomentum(mom);
-      console.log('Analytics: computed momentum:', mom.length, 'data points');
 
       const peak = peakHoursGrid(sessionsData);
       setPeakHours(peak);
@@ -131,37 +133,54 @@ export function useAnalytics() {
       const dynamicAreas = uniqueAreas.length > 0 ? uniqueAreas : (areaColorsList.slice(0, 3) as string[]);
       const balance = areaBalanceByAreas(sessionsData, dynamicAreas, 8);
       setAreaBalance(balance);
-      console.log('Analytics: computed areaBalance:', balance.length, 'weeks, areas:', dynamicAreas);
 
-      // Load wheel data from localStorage
+      // Compute sleep × focus correlation
+      const corrPoints = sleepFocusCorrelation(sessionsData, healthData);
+      setSleepFocusData(corrPoints);
+      const regPoints = corrPoints.map(p => ({ x: p.sleepHours, y: p.avgFocusMinutes }));
+      setSleepFocusRegression(linearRegression(regPoints));
+
+      // Load wheel data — try server first, fall back to localStorage
+      let loadedWheelAxes: WheelAxis[] = [];
       try {
-        const stored = localStorage.getItem('wheel_data');
-        if (stored) {
-          const wheelData = JSON.parse(stored);
-          const defaultAxes: WheelAxisId[] = ['body', 'mind', 'soul', 'growth', 'money', 'mission', 'romance', 'family', 'friends', 'joy'];
-          const loadedAxes = defaultAxes.map(id => ({
-            id,
-            currentScore: wheelData.axes?.[id]?.currentScore ?? 5,
-            targetScore: wheelData.axes?.[id]?.targetScore ?? 8,
-          }));
-          setWheelAxes(loadedAxes);
+        const defaultAxes: WheelAxisId[] = ['body', 'mind', 'soul', 'growth', 'money', 'mission', 'romance', 'family', 'friends', 'joy'];
+        // Try API first
+        const wheelData = await api.getWheel().catch(() => null);
+        if (wheelData && wheelData.axes && wheelData.axes.length > 0) {
+          loadedWheelAxes = defaultAxes.map(id => {
+            const existing = wheelData.axes.find((a: any) => a.id === id);
+            return { id, currentScore: existing?.currentScore ?? 5, targetScore: existing?.targetScore ?? 8 };
+          });
           setWheelSnapshots(wheelData.snapshots || []);
-          console.log('Analytics: loaded wheel axes:', loadedAxes.length);
+        } else {
+          // Fall back to localStorage
+          const stored = localStorage.getItem('wheel_data');
+          if (stored) {
+            const wheelLocalData = JSON.parse(stored);
+            loadedWheelAxes = defaultAxes.map(id => ({
+              id,
+              currentScore: wheelLocalData.axes?.[id]?.currentScore ?? 5,
+              targetScore: wheelLocalData.axes?.[id]?.targetScore ?? 8,
+            }));
+            setWheelSnapshots(wheelLocalData.snapshots || []);
+          } else {
+            loadedWheelAxes = defaultAxes.map(id => ({ id, currentScore: 5, targetScore: 8 }));
+          }
         }
+        setWheelAxes(loadedWheelAxes);
       } catch (err) {
         console.warn('Failed to load wheel data:', err);
       }
 
-      // Build weekly report with health and habit data
+      // Build weekly report — use local variables (not stale state) so data is always current
       const report = buildWeeklyReport(
         sessionsData,
         healthData,
         habitsData.map(h => ({ ...h, targetDays: JSON.parse(h.target_days || '[]') })),
-        habitEntries,
-        wheelAxes
+        entries,           // local var, not stale habitEntries state
+        loadedWheelAxes    // local var, not stale wheelAxes state
       );
       setWeeklyReport(report);
-      console.log('Analytics: built weekly report with health data');
     } catch (err) {
       console.error('Analytics load error:', err);
       setError(err instanceof Error ? err.message : 'Failed to load analytics');
@@ -188,6 +207,8 @@ export function useAnalytics() {
     areaBalance,
     weeklyReport,
     healthCheckins,
+    sleepFocusData,
+    sleepFocusRegression,
     loading,
     error,
     getColor,

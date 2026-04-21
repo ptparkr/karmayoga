@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useHealth } from '../hooks/useHealth';
 import type { BiologicalMarker } from '../types';
 
@@ -256,5 +257,3 @@ function MarkerForm({ onSubmit }: { onSubmit: (data: any) => Promise<any> }) {
     </form>
   );
 }
-
-import { useState } from 'react';

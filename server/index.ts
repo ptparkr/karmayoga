@@ -7,6 +7,7 @@ import pomodoroRouter from './routes/pomodoro';
 import areasRouter from './routes/areas';
 import utilsRouter from './routes/utils';
 import healthRouter from './routes/health';
+import wheelRouter from './routes/wheel';
 
 const app = express();
 const PORT = 3001;
@@ -20,6 +21,7 @@ app.use('/api/pomodoro', pomodoroRouter);
 app.use('/api/areas', areasRouter);
 app.use('/api/utils', utilsRouter);
 app.use('/api/health', healthRouter);
+app.use('/api/wheel', wheelRouter);
 
 async function start() {
   await initDb();
