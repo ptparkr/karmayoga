@@ -438,11 +438,17 @@ export function buildWeeklyReport(
   weekStart.setDate(now.getDate() - now.getDay());
   weekStart.setHours(0, 0, 0, 0);
   const weekStartStr = toLocalDateString(weekStart);
-  
+
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekStart.getDate() + 6);
+  weekEnd.setHours(23, 59, 59, 999);
+  const weekEndStr = toLocalDateString(weekEnd);
+
   // Focus stats
   const weekSessions = sessions.filter(s => {
     if (!s.created_at) return false;
-    return toLocalDateString(new Date(s.created_at)) >= weekStartStr;
+    const dateStr = toLocalDateString(new Date(s.created_at));
+    return dateStr >= weekStartStr && dateStr <= weekEndStr;
   });
   const completed = weekSessions.filter(s => s.completed);
   const totalFocusMinutes = weekSessions.reduce((sum, s) => sum + (s.focus_min || 0), 0);
@@ -469,6 +475,8 @@ export function buildWeeklyReport(
   const habitAreaRates: Record<string, number> = {};
   
   const areaIds = [...new Set(habits.map(h => h.area))];
+  const completionLookup = new Set(habitEntries.map(e => `${e.habitId}:${e.date}`));
+  const underperformingHabits: string[] = [];
   
   for (const areaId of areaIds) {
     let aScheduled = 0;
@@ -478,7 +486,7 @@ export function buildWeeklyReport(
       const day = new Date(weekStart);
       day.setDate(weekStart.getDate() + d);
       const dayOfWeek = day.getDay();
-      const dateStr = day.toISOString().slice(0, 10);
+      const dateStr = toLocalDateString(day);
       
       const dayHabits = habits.filter(h => h.area === areaId);
       for (const h of dayHabits) {
@@ -486,8 +494,7 @@ export function buildWeeklyReport(
         if (!targetDays.includes(dayOfWeek)) continue;
         aScheduled++;
         totalScheduled++;
-        const entry = habitEntries.find(e => e.habitId === h.id && e.date === dateStr && e.completed);
-        if (entry) {
+        if (completionLookup.has(`${h.id}:${dateStr}`)) {
           aCompleted++;
           totalCompleted++;
         }
@@ -559,7 +566,25 @@ export function buildWeeklyReport(
     recommendations.push(`Average sleep was ${sleepAvg.toFixed(1)} hrs — below the 7-hr threshold for optimal focus.`);
   }
   if (habitCompletionRate < 0.6) {
-    recommendations.push(`Habit completion was ${Math.round(habitCompletionRate * 100)}%. Consider dropping 1-2 habits until you're at 80%+.`);
+    recommendations.push(`Overall habit completion was ${Math.round(habitCompletionRate * 100)}%. Consider dropping 1-2 low-impact habits.`);
+  }
+  
+  // Detect specific underperforming habits
+  for (const h of habits) {
+    const relevantEntries = habitEntries.filter(e => e.habitId === h.id && e.date >= weekStartStr);
+    const scheduledCount = Array.from({length: 7}).filter((_, i) => {
+        const d = new Date(weekStart);
+        d.setDate(weekStart.getDate() + i);
+        return h.targetDays?.includes(d.getDay());
+    }).length;
+    
+    if (scheduledCount > 0 && relevantEntries.length / scheduledCount < 0.4) {
+      underperformingHabits.push(h.name);
+    }
+  }
+
+  if (underperformingHabits.length > 0) {
+    recommendations.push(`Habit friction detected: "${underperformingHabits.slice(0, 2).join(', ')}" were often missed. Try a smaller version of these.`);
   }
   if (lowestWheelAxis && lowestWheelAxis.score < 4) {
     recommendations.push(`"${lowestWheelAxis.label}" is your lowest wheel axis (${lowestWheelAxis.score}/10). One intentional action this week can move it.`);
@@ -573,7 +598,7 @@ export function buildWeeklyReport(
   
   return {
     weekStart: weekStartStr,
-    weekEnd: toLocalDateString(now),
+    weekEnd: weekEndStr,
     totalFocusMinutes,
     focusByArea,
     completedSessions: completed.length,

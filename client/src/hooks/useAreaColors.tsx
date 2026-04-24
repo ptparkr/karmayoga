@@ -52,7 +52,14 @@ export function AreaColorsProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const getColor = useCallback((area: string) => {
-    return colors[area] || FALLBACK;
+    if (colors[area]) return colors[area];
+    const defaultColor = [
+      ['body', '#00ffcc'], ['mind', '#3b82f6'], ['soul', '#8b5cf6'],
+      ['growth', '#f59e0b'], ['money', '#10b981'], ['mission', '#ef4444'],
+      ['romance', '#ec4899'], ['family', '#f97316'], ['friends', '#84cc16'],
+      ['joy', '#fbbf24']
+    ].find(([name]) => name === area.toLowerCase());
+    return defaultColor ? defaultColor[1] : FALLBACK;
   }, [colors]);
 
   const addArea = useCallback(async (area: string, color: string) => {
@@ -80,6 +87,11 @@ export function AreaColorsProvider({ children }: { children: ReactNode }) {
       ['soul', '#8b5cf6'],
       ['growth', '#f59e0b'],
       ['money', '#10b981'],
+      ['mission', '#ef4444'],
+      ['romance', '#ec4899'],
+      ['family', '#f97316'],
+      ['friends', '#84cc16'],
+      ['joy', '#fbbf24'],
     ] as const;
 
     setAreas(defaults.map(([name]) => name));

@@ -3750,6 +3750,30 @@ input[type="color"]::-moz-color-swatch {
   text-align: center;
 }
 
+.wheel-segment-fill {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  filter: drop-shadow(0 0 4px rgba(0, 0, 0, 0.2));
+}
+
+.wheel-segment-fill:hover {
+  filter: brightness(1.2) drop-shadow(0 0 8px currentColor);
+  transform: scale(1.02);
+  transform-origin: center;
+}
+
+.wheel-segment-bg {
+  transition: opacity 0.3s ease;
+}
+
+.wheel-axis-group:hover .wheel-segment-bg {
+  opacity: 0.2;
+}
+
+.wheel-axis-label {
+  pointer-events: none;
+  text-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+}
+
 /* Weekly Report */
 .weekly-report {
   background: var(--bg-secondary);

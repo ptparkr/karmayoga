@@ -11,8 +11,9 @@ export function WeeklyReport({ report }: Props) {
   const hours = Math.floor(report.totalFocusMinutes / 60);
   const minutes = report.totalFocusMinutes % 60;
 
-  const formatDate = (str: string) => {
-    const d = new Date(str);
+  const formatDate = (str: string | undefined) => {
+    if (!str) return '—';
+    const d = new Date(str + 'T12:00:00'); // Use mid-day to avoid TZ shifts
     return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   };
 
@@ -39,7 +40,7 @@ export function WeeklyReport({ report }: Props) {
             <span className="weekly-report-stat-label">Focus</span>
           </div>
           <div className="weekly-report-stat">
-            <span className="weekly-report-stat-value">{Math.round(report.habitCompletionRate * 100)}%</span>
+            <span className="weekly-report-stat-value">{Math.round((report.habitCompletionRate || 0) * 100)}%</span>
             <span className="weekly-report-stat-label">Habits</span>
           </div>
           <div className="weekly-report-stat">
