@@ -1,6 +1,6 @@
 {
-  "name": "karma-yoga-server",
-  "version": "1.0.0",
+  "name": "karma-yoga",
+  "version": "2.0.0",
   "private": true,
   "scripts": {
     "dev": "tsx watch index.ts",

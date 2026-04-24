@@ -5,9 +5,10 @@ Personal habit tracker, dashboard, and pomodoro timer.
 ## Features
 
 - **Habit Tracking** - Track daily habits across customizable areas of life with visual heatmaps and streak tracking
-- **Dashboard Analytics** - View streak stats, consistency metrics, and weekly progress charts
+- **Wheel of Life** - Interactive 10-wedge radial chart for holistic life balance tracking with 10-segment precision
+- **Dashboard Analytics** - Multi-column overview with streak stats, consistency metrics, and dedicated focus intensity cards
 - **Pomodoro Timer** - Focus timer with configurable presets (25/50/90 min) and session logging
-- **Dark Theme** - Clean, modern dark UI with customizable area colors
+- **Dark Theme** - Premium glassmorphism UI with modern glow effects and responsive layouts
 
 ## Quick Start
 

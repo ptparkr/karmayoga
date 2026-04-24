@@ -18,4 +18,8 @@
 ## Regression Checks
 - Dashboard quick habit toggle refreshes current stats without stale cached state.
 - Habit area deletion refreshes the screen cleanly without client errors.
-- Wheel page still loads with server-backed data first and local fallback if needed.
+- Wheel page loads with server-backed data and renders the 10-segment radial wedges correctly.
+- Verify that clicking a wedge segment updates the score immediately and persists on refresh.
+- Check that the Analytics page's two-column layout stacks correctly on smaller screens.
+- Confirm that Focus Time cards accurately reflect session logs without data leakage between date ranges.
+- Validate that device time synchronization is consistent across the Dashboard, Analytics, and Health tabs.

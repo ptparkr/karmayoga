@@ -1,5 +1,20 @@
 # Changelog
 
+## v2.0.0 - 2026-04-24
+
+### Added
+- **Radial Wheel of Life**: Complete refactor to a 360-degree wedge-based chart with 10-segment concentric bars for high-precision life balance tracking.
+- **Analytics Overhaul**: New two-column dashboard layout with dedicated Focus Time cards and improved momentum trends.
+- **Improved Data Integrity**: Centralized device time synchronization and fixed stale data handling in analytics reports.
+
+### Changed
+- **UI/UX Enhancements**: Refined glassmorphism aesthetics with brighter glow effects and improved responsive layouts.
+- **Health Section**: Optimized DOB logic and measurements persistence.
+
+### Fixed
+- Resolved missing server-side wheel routes and synchronization issues.
+- Fixed incorrect date filtering in momentum trends.
+
 ## v1.0.0 - 2025-04-13
 
 ### Added
