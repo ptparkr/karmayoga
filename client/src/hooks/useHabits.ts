@@ -35,7 +35,17 @@ function getCached(): CachedData | null {
 function setCached(data: CachedData): void {
   try {
     localStorage.setItem(CACHE_KEY, JSON.stringify(data));
-  } catch {}
+  } catch (err) {
+    console.warn('Failed to cache habits data:', err);
+  }
+}
+
+function clearCached(): void {
+  try {
+    localStorage.removeItem(CACHE_KEY);
+  } catch (err) {
+    console.warn('Failed to clear habits cache:', err);
+  }
 }
 
 export function useHabits() {
@@ -149,6 +159,7 @@ export function useHabits() {
 
   const addHabit = useCallback(async (name: string, area: string, targetDays?: number[]) => {
     const habit = await api.createHabit(name, area, targetDays);
+    clearCached();
     setHabits(prev => [...prev, habit]);
     setCheckins(prev => ({ ...prev, [habit.id]: new Set() }));
     setStreaks(prev => ({ ...prev, [habit.id]: { habitId: habit.id, currentStreak: 0, longestStreak: 0, totalCheckins: 0, lastCheckinDate: null } }));
@@ -159,6 +170,7 @@ export function useHabits() {
 
   const deleteHabit = useCallback(async (id: string) => {
     await api.deleteHabit(id);
+    clearCached();
     setHabits(prev => prev.filter(h => h.id !== id));
     setCheckins(prev => {
       const next = { ...prev };
@@ -178,6 +190,7 @@ export function useHabits() {
   const toggleCheckin = useCallback(async (id: string, date?: string) => {
     const d = date || today();
     const result = await api.toggleCheckin(id, d);
+    clearCached();
     setCheckins(prev => {
       const set = new Set(prev[id] || []);
       if (result.checked) set.add(d);
@@ -215,6 +228,7 @@ export function useHabits() {
 
   const updateTargetDays = useCallback(async (id: string, targetDays: number[]) => {
     await api.updateTargetDays(id, targetDays);
+    clearCached();
     setHabits(prev => prev.map(h => 
       h.id === id ? { ...h, target_days: JSON.stringify(targetDays) } : h
     ));

@@ -9,14 +9,14 @@ export function HealthPage() {
 
   if (loading) {
     return (
-      <div className="app-main">
+      <div className="page-shell">
         <div className="empty-state"><span className="empty-icon" style={{ animation: 'pulse 1.5s infinite' }}>...</span></div>
       </div>
     );
   }
 
   return (
-    <div className="app-main">
+    <div className="page-shell">
       <div className="page-header">
         <h1 className="page-title">Health</h1>
         <p className="page-subtitle">{today}</p>

@@ -243,3 +243,36 @@ export interface WheelData {
   axes: WheelAxis[];
   snapshots: WheelSnapshot[];
 }
+
+export interface UserProfileSettings {
+  name: string;
+  dateOfBirth: string;
+  sex: 'male' | 'female' | 'other';
+}
+
+export interface MeasurementSettings {
+  heightCm: number | null;
+  weightKg: number | null;
+  waistCm: number | null;
+  bodyFatPercent: number | null;
+  restingHeartRate: number | null;
+}
+
+export interface PomodoroSettings {
+  defaultPomoDuration: 25 | 45 | 90;
+  shortBreak: number;
+  longBreak: number;
+  pomosBeforeLongBreak: number;
+}
+
+export interface AppBehaviorSettings {
+  reducedMotion: boolean;
+  showAdaptiveRecommendations: boolean;
+}
+
+export interface AppSettings {
+  profile: UserProfileSettings;
+  measurements: MeasurementSettings;
+  pomodoro: PomodoroSettings;
+  preferences: AppBehaviorSettings;
+}

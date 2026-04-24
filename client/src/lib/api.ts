@@ -44,7 +44,11 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   }
 
   const text = await res.text();
-  return text ? (JSON.parse(text) as T) : (undefined as T);
+  try {
+    return text ? (JSON.parse(text) as T) : (undefined as T);
+  } catch (err) {
+    throw new Error(`Invalid JSON response: ${err}`);
+  }
 }
 
 export const api = {

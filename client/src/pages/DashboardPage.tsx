@@ -37,7 +37,7 @@ export function DashboardPage() {
   }
 
   return (
-    <div className="app-main">
+    <div className="page-shell">
       <div className="page-header">
         <h1 className="page-title">Dashboard</h1>
         <p className="page-subtitle">Daily command center built for a fast scan and an even faster loop.</p>

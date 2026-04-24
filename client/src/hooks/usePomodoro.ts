@@ -1,25 +1,22 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../lib/api';
+import { loadSettings } from '../lib/settings';
 import { storageGet, storageGetString, storageRemove, storageSet, storageSetString } from '../lib/storage';
 import type { FocusAnalytics, FocusQuality, PomodoroSession } from '../types';
 
 export type Phase = 'idle' | 'focus' | 'rating' | 'short_break' | 'long_break';
 
 interface Preset {
-  focus: number;      // minutes
+  focus: number;
   shortBreak: number;
   longBreak: number;
   cyclesBeforeLong: number;
 }
 
-const PRESETS: Record<number, Preset> = {
-  25: { focus: 25, shortBreak: 5, longBreak: 10, cyclesBeforeLong: 4 },
-  50: { focus: 50, shortBreak: 10, longBreak: 20, cyclesBeforeLong: 3 },
-  90: { focus: 90, shortBreak: 20, longBreak: 30, cyclesBeforeLong: 2 },
-};
+type PresetKey = 25 | 45 | 90;
 
 const POMODORO_CACHE_KEY = 'pomodoro_sessions_cache';
-const POMODORO_CACHE_TTL = 2 * 60 * 1000; // 2 minutes
+const POMODORO_CACHE_TTL = 2 * 60 * 1000;
 
 interface PomodoroCache {
   sessions: PomodoroSession[];
@@ -27,31 +24,63 @@ interface PomodoroCache {
   timestamp: number;
 }
 
+function buildPresets(): Record<PresetKey, Preset> {
+  const settings = loadSettings();
+  return {
+    25: {
+      focus: 25,
+      shortBreak: settings.pomodoro.shortBreak,
+      longBreak: settings.pomodoro.longBreak,
+      cyclesBeforeLong: settings.pomodoro.pomosBeforeLongBreak,
+    },
+    45: {
+      focus: 45,
+      shortBreak: settings.pomodoro.shortBreak,
+      longBreak: settings.pomodoro.longBreak,
+      cyclesBeforeLong: settings.pomodoro.pomosBeforeLongBreak,
+    },
+    90: {
+      focus: 90,
+      shortBreak: settings.pomodoro.shortBreak,
+      longBreak: settings.pomodoro.longBreak,
+      cyclesBeforeLong: settings.pomodoro.pomosBeforeLongBreak,
+    },
+  };
+}
+
 function getPomodoroCached(): PomodoroCache | null {
   try {
     const raw = localStorage.getItem(POMODORO_CACHE_KEY);
     if (!raw) return null;
     const cached = JSON.parse(raw) as PomodoroCache;
-    if (Date.now() - cached.timestamp > POMODORO_CACHE_TTL) return null;
-    return cached;
+    return Date.now() - cached.timestamp > POMODORO_CACHE_TTL ? null : cached;
   } catch {
     return null;
   }
 }
 
-function setPomodoroCached(data: PomodoroCache): void {
+function setPomodoroCached(data: PomodoroCache) {
   try {
     localStorage.setItem(POMODORO_CACHE_KEY, JSON.stringify(data));
-  } catch {}
+  } catch (err) {
+    console.warn('Failed to cache pomodoro data:', err);
+  }
 }
 
 export function usePomodoro() {
-  const [presetKey, setPresetKey] = useState<number>(() => storageGet<number>('pomodoro_preset', 25));
+  const presets = useMemo(() => buildPresets(), []);
+  const presetValues = useMemo(() => Object.keys(presets).map(Number) as PresetKey[], [presets]);
+  const defaultPreset = loadSettings().pomodoro.defaultPomoDuration as PresetKey;
+
+  const [presetKey, setPresetKey] = useState<PresetKey>(() => {
+    const storedPreset = storageGet<number>('pomodoro_preset', defaultPreset);
+    return storedPreset === 45 || storedPreset === 90 ? storedPreset : 25;
+  });
   const [phase, setPhase] = useState<Phase>(() => {
     const stored = storageGetString('pomodoro_phase', 'idle');
-    return ['idle', 'focus', 'short_break', 'long_break'].includes(stored) ? (stored as Phase) : 'idle';
+    return ['idle', 'focus', 'short_break', 'long_break', 'rating'].includes(stored) ? (stored as Phase) : 'idle';
   });
-  const [totalSeconds, setTotalSeconds] = useState(() => storageGet<number>('pomodoro_total', 25 * 60));
+  const [totalSeconds, setTotalSeconds] = useState(() => storageGet<number>('pomodoro_total', presets[defaultPreset].focus * 60));
   const [isRunning, setIsRunning] = useState(() => storageGetString('pomodoro_running', 'false') === 'true');
   const [cycle, setCycle] = useState(() => storageGet<number>('pomodoro_cycle', 1));
   const [todaySessions, setTodaySessions] = useState<PomodoroSession[]>([]);
@@ -60,6 +89,7 @@ export function usePomodoro() {
   const [focusAnalytics, setFocusAnalytics] = useState<FocusAnalytics | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [recentSessions, setRecentSessions] = useState<PomodoroSession[]>([]);
 
   const [endTime, setEndTime] = useState<number | null>(() => {
     const saved = storageGet<number | null>('pomodoro_endTime', null);
@@ -69,45 +99,53 @@ export function usePomodoro() {
   const [remainingSeconds, setRemainingSeconds] = useState(() => {
     const savedEndTime = storageGet<number | null>('pomodoro_endTime', null);
     const wasRunning = storageGetString('pomodoro_running', 'false') === 'true';
-    
     if (typeof savedEndTime === 'number' && wasRunning) {
-      const remaining = Math.max(0, Math.floor((savedEndTime - Date.now()) / 1000));
-      return remaining;
+      return Math.max(0, Math.floor((savedEndTime - Date.now()) / 1000));
     }
-    return storageGet<number>('pomodoro_remaining', 25 * 60);
+    return storageGet<number>('pomodoro_remaining', presets[defaultPreset].focus * 60);
   });
 
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const preset = PRESETS[presetKey];
+  const endTimeRef = useRef<number | null>(null);
+  const preset = presets[presetKey] ?? presets[defaultPreset];
 
+  const refreshSessionData = useCallback(async () => {
+    const [sessions, analytics, recent] = await Promise.all([
+      api.getTodaySessions(),
+      api.getFocusAnalytics(),
+      api.getRecentSessions(7),
+    ]);
+    setTodaySessions(sessions);
+    setFocusAnalytics(analytics);
+    setRecentSessions(recent);
+    setPomodoroCached({ sessions, analytics, timestamp: Date.now() });
+  }, []);
 
-
-  // Load today's sessions and analytics
   useEffect(() => {
     let cancelled = false;
 
     const load = async () => {
-      // Try cache first
       const cached = getPomodoroCached();
-      if (cached) {
+      if (cached && !cancelled) {
         setTodaySessions(cached.sessions);
         setFocusAnalytics(cached.analytics);
         setLoading(false);
       }
 
       try {
-        const [sessions, analytics] = await Promise.all([
+        const [sessions, analytics, recent] = await Promise.all([
           api.getTodaySessions(),
           api.getFocusAnalytics(),
+          api.getRecentSessions(7),
         ]);
-
         if (cancelled) return;
         setTodaySessions(sessions);
         setFocusAnalytics(analytics);
+        setRecentSessions(recent);
         setPomodoroCached({ sessions, analytics, timestamp: Date.now() });
       } catch (err) {
-        console.error(err);
         if (!cancelled) {
+          console.error(err);
           setError(err instanceof Error ? err.message : 'Failed to load pomodoro data.');
         }
       } finally {
@@ -118,13 +156,11 @@ export function usePomodoro() {
     };
 
     void load();
-
     return () => {
       cancelled = true;
     };
   }, []);
 
-  // Persistence Sync
   useEffect(() => {
     storageSet('pomodoro_preset', presetKey);
     storageSetString('pomodoro_phase', phase);
@@ -139,20 +175,22 @@ export function usePomodoro() {
     } else {
       storageRemove('pomodoro_endTime');
     }
-  }, [presetKey, phase, remainingSeconds, totalSeconds, isRunning, cycle, selectedArea, intention, endTime]);
+  }, [cycle, endTime, intention, isRunning, phase, presetKey, remainingSeconds, selectedArea, totalSeconds]);
 
-  // Timer tick - using timestamp-based calculation to avoid drift
   useEffect(() => {
+    endTimeRef.current = endTime;
     if (isRunning && endTime) {
       intervalRef.current = setInterval(() => {
-        const remaining = Math.max(0, Math.floor((endTime - Date.now()) / 1000));
-        setRemainingSeconds(remaining);
+        const currentEndTime = endTimeRef.current;
+        if (!currentEndTime) return;
+        setRemainingSeconds(Math.max(0, Math.floor((currentEndTime - Date.now()) / 1000)));
       }, 1000);
     }
+
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  }, [isRunning, endTime]);
+  }, [endTime, isRunning]);
 
   const handlePhaseEnd = useCallback(() => {
     setIsRunning(false);
@@ -160,77 +198,67 @@ export function usePomodoro() {
     if (intervalRef.current) clearInterval(intervalRef.current);
 
     if (phase === 'focus') {
-      // Enter rating phase to get quality rating before logging session
       setPhase('rating');
-    } else {
-      // Break ended → back to focus
-      if (phase === 'short_break') {
-        setCycle(c => c + 1);
-      }
-      setPhase('idle');
-      const secs = preset.focus * 60;
-      setTotalSeconds(secs);
-      setRemainingSeconds(secs);
+      return;
     }
-  }, [phase, cycle, preset]);
 
-  const submitRating = useCallback((quality: FocusQuality) => {
-    // Log the completed focus session with quality
-    api.logSession(preset.focus, preset.shortBreak, true, selectedArea, intention, quality)
-      .then(() => {
-        api.getTodaySessions().then(setTodaySessions);
-        api.getFocusAnalytics().then(setFocusAnalytics);
-      })
-      .catch(console.error);
+    if (phase === 'short_break') {
+      setCycle(current => current + 1);
+    }
+    setPhase('idle');
+    setTotalSeconds(preset.focus * 60);
+    setRemainingSeconds(preset.focus * 60);
+  }, [phase, preset.focus]);
 
-    // Determine next break
+  const submitRating = useCallback(async (quality: FocusQuality | null) => {
+    try {
+      await api.logSession(preset.focus, preset.shortBreak, true, selectedArea, intention, quality ?? undefined);
+      await refreshSessionData();
+    } catch (err) {
+      console.error('Failed to log pomodoro session:', err);
+    }
+
     if (cycle >= preset.cyclesBeforeLong) {
       setPhase('long_break');
-      const secs = preset.longBreak * 60;
-      setTotalSeconds(secs);
-      setRemainingSeconds(secs);
+      setTotalSeconds(preset.longBreak * 60);
+      setRemainingSeconds(preset.longBreak * 60);
       setCycle(1);
-    } else {
-      setPhase('short_break');
-      const secs = preset.shortBreak * 60;
-      setTotalSeconds(secs);
-      setRemainingSeconds(secs);
+      return;
     }
-  }, [cycle, preset, selectedArea, intention]);
 
-  // Handle Phase End when timer reaches zero
+    setPhase('short_break');
+    setTotalSeconds(preset.shortBreak * 60);
+    setRemainingSeconds(preset.shortBreak * 60);
+  }, [cycle, intention, preset, refreshSessionData, selectedArea]);
+
   useEffect(() => {
     if (isRunning && remainingSeconds === 0) {
       handlePhaseEnd();
     }
-  }, [remainingSeconds, isRunning, handlePhaseEnd]);
+  }, [handlePhaseEnd, isRunning, remainingSeconds]);
 
-  const selectPreset = useCallback((key: number) => {
-    const p = PRESETS[key];
+  const selectPreset = useCallback((key: PresetKey) => {
+    const nextPreset = presets[key];
+    if (!nextPreset) return;
     setPresetKey(key);
     setPhase('idle');
     setIsRunning(false);
     setEndTime(null);
     setCycle(1);
-    const secs = p.focus * 60;
-    setTotalSeconds(secs);
-    setRemainingSeconds(secs);
+    setTotalSeconds(nextPreset.focus * 60);
+    setRemainingSeconds(nextPreset.focus * 60);
     if (intervalRef.current) clearInterval(intervalRef.current);
-  }, []);
+  }, [presets]);
 
   const start = useCallback(() => {
-    if (phase === 'idle') {
-      setPhase('focus');
-    }
-    const end = Date.now() + remainingSeconds * 1000;
-    setEndTime(end);
+    if (phase === 'idle') setPhase('focus');
+    setEndTime(Date.now() + remainingSeconds * 1000);
     setIsRunning(true);
   }, [phase, remainingSeconds]);
 
   const pause = useCallback(() => {
     if (endTime) {
-      const remaining = Math.max(0, Math.floor((endTime - Date.now()) / 1000));
-      setRemainingSeconds(remaining);
+      setRemainingSeconds(Math.max(0, Math.floor((endTime - Date.now()) / 1000)));
       setEndTime(null);
     }
     setIsRunning(false);
@@ -241,23 +269,22 @@ export function usePomodoro() {
     setEndTime(null);
     setPhase('idle');
     setCycle(1);
-    const secs = preset.focus * 60;
-    setTotalSeconds(secs);
-    setRemainingSeconds(secs);
+    setTotalSeconds(preset.focus * 60);
+    setRemainingSeconds(preset.focus * 60);
     if (intervalRef.current) clearInterval(intervalRef.current);
-  }, [preset]);
+  }, [preset.focus]);
 
-  const phaseLabel = phase === 'idle' ? 'Ready'
-    : phase === 'focus' ? 'Focus'
-    : phase === 'rating' ? 'Rate Session'
-    : phase === 'short_break' ? 'Short Break'
-    : 'Long Break';
+  const phaseLabel = phase === 'idle'
+    ? 'Ready'
+    : phase === 'focus'
+      ? 'Focus'
+      : phase === 'rating'
+        ? 'Rate Session'
+        : phase === 'short_break'
+          ? 'Short Break'
+          : 'Long Break';
 
   const sessionLabel = `Cycle ${cycle} of ${preset.cyclesBeforeLong}`;
-
-  const setIntentionText = useCallback((text: string) => {
-    setIntention(text);
-  }, []);
 
   return {
     presetKey,
@@ -274,11 +301,13 @@ export function usePomodoro() {
     loading,
     error,
     todaySessions,
-    presets: Object.keys(PRESETS).map(Number),
+    recentSessions,
+    presets: presetValues,
+    presetConfig: preset,
     selectedArea,
     setSelectedArea,
     intention,
-    setIntentionText,
+    setIntentionText: setIntention,
     submitRating,
     focusAnalytics,
   };

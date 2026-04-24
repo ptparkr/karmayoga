@@ -49,7 +49,7 @@ export function StatCardShimmer({ glow }: StatCardShimmerProps) {
 
 export function DashboardShimmer() {
   return (
-    <div className="app-main">
+    <div className="page-shell">
       <div className="page-header">
         <Shimmer width={180} height={40} borderRadius={8} />
         <Shimmer width={320} height={20} style={{ marginTop: 8 }} />
@@ -66,7 +66,7 @@ export function DashboardShimmer() {
 
 export function PomodoroShimmer() {
   return (
-    <div className="app-main">
+    <div className="page-shell">
       <div className="page-header">
         <Shimmer width={160} height={40} borderRadius={8} />
         <Shimmer width={280} height={20} style={{ marginTop: 8 }} />
@@ -144,55 +144,3 @@ export function TargetCardShimmer() {
     </div>
   );
 }
-
-<style>{`
-  .shimmer-container {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  
-  .shimmer-gradient {
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(
-      110deg,
-      transparent 0%,
-      rgba(255, 255, 255, 0.04) 20%,
-      rgba(255, 255, 255, 0.08) 40%,
-      rgba(255, 255, 255, 0.04) 60%,
-      transparent 100%
-    );
-    animation: shimmer-sweep 1.8s ease-in-out infinite;
-  }
-
-  .shimmer-card {
-    transition: all var(--duration-normal) var(--ease-out);
-  }
-  
-  .shimmer-card.glow {
-    border-color: rgba(0, 255, 204, 0.25);
-    box-shadow: 0 0 20px rgba(0, 255, 204, 0.1);
-  }
-  
-  .shimmer-icon {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  
-  .shimmer-stat-content {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .shimmer-timer-ring {
-    margin: var(--gap-xl) 0;
-  }
-
-  @keyframes shimmer-sweep {
-    0% { transform: translateX(-100%); }
-    100% { transform: translateX(100%); }
-  }
-`}</style>

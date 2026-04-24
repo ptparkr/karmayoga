@@ -1,8 +1,8 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import type { FocusQuality } from '../types';
 
 interface Props {
-  onRate: (quality: FocusQuality) => void;
+  onRate: (quality: FocusQuality | null) => void;
   autoSubmitSeconds?: number;
 }
 
@@ -21,27 +21,26 @@ export function QualityRating({ onRate, autoSubmitSeconds = 30 }: Props) {
 
   useEffect(() => {
     if (selected !== null) return;
-    
+
     const timer = setInterval(() => {
-      setCountdown(prev => {
-        if (prev <= 1) {
-          onRate(3);
+      setCountdown(current => {
+        if (current <= 1) {
+          onRate(null);
           return 0;
         }
-        return prev - 1;
+        return current - 1;
       });
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [selected, onRate]);
+  }, [onRate, selected]);
 
-  const handleSelect = useCallback((q: FocusQuality) => {
-    setSelected(q);
-    onRate(q);
+  const handleSelect = useCallback((quality: FocusQuality) => {
+    setSelected(quality);
+    onRate(quality);
   }, [onRate]);
 
   const currentLabel = (hovered ?? selected ?? 3) as FocusQuality;
-  const label = QUALITY_LABELS[currentLabel];
   const progress = (countdown / autoSubmitSeconds) * 100;
 
   return (
@@ -53,13 +52,13 @@ export function QualityRating({ onRate, autoSubmitSeconds = 30 }: Props) {
         </div>
 
         <div className="quality-stars">
-          {([1, 2, 3, 4, 5] as FocusQuality[]).map((q) => (
+          {([1, 2, 3, 4, 5] as FocusQuality[]).map(quality => (
             <button
-              key={q}
-              className={`quality-star ${(hovered ?? selected ?? 0) >= q ? 'filled' : ''} ${selected === q ? 'selected' : ''}`}
-              onMouseEnter={() => setHovered(q)}
+              key={quality}
+              className={`quality-star ${(hovered ?? selected ?? 0) >= quality ? 'filled' : ''} ${selected === quality ? 'selected' : ''}`}
+              onMouseEnter={() => setHovered(quality)}
               onMouseLeave={() => setHovered(null)}
-              onClick={() => handleSelect(q)}
+              onClick={() => handleSelect(quality)}
               disabled={selected !== null}
             >
               <svg viewBox="0 0 24 24" fill="currentColor">
@@ -69,14 +68,14 @@ export function QualityRating({ onRate, autoSubmitSeconds = 30 }: Props) {
           ))}
         </div>
 
-        <div className="quality-label">{label}</div>
+        <div className="quality-label">{QUALITY_LABELS[currentLabel]}</div>
 
         {selected === null && (
           <div className="quality-countdown">
             <div className="countdown-bar">
               <div className="countdown-progress" style={{ width: `${progress}%` }} />
             </div>
-            <span>Auto-selecting in {countdown}s</span>
+            <span>Auto-skipping in {countdown}s</span>
           </div>
         )}
 

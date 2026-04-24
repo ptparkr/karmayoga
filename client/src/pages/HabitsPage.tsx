@@ -78,7 +78,11 @@ export function HabitsPage() {
   const handleDeleteArea = async (areaToDelete: string) => {
     if (confirm(`Delete area "${areaToDelete}" and all its habits? This cannot be undone.`)) {
       await removeArea(areaToDelete);
-      window.location.reload(); 
+      if (area === areaToDelete) {
+        const nextAreas = areas.filter(a => a !== areaToDelete);
+        setArea(nextAreas.length > 0 ? nextAreas[0] : '');
+      }
+      await refresh(true);
     }
   };
 
@@ -152,14 +156,14 @@ export function HabitsPage() {
 
   if (loading) {
     return (
-      <div className="app-main">
+      <div className="page-shell">
         <div className="empty-state"><span className="empty-icon" style={{ animation: 'pulse 1.5s infinite' }}>⏳</span></div>
       </div>
     );
   }
 
   return (
-    <div className="app-main">
+    <div className="page-shell">
       <div className="page-header">
         <h1 className="page-title">Habits & Areas</h1>
         <p className="page-subtitle">Track your daily habits across your customizable areas of life</p>

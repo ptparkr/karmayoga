@@ -1,54 +1,72 @@
 import type { CSSProperties } from 'react';
-import { useState, useEffect } from 'react';
+import { useMemo, useState } from 'react';
 import { usePomodoro } from '../hooks/usePomodoro';
 import { TimerRing } from '../components/TimerRing';
 import { FocusActivityMap } from '../components/FocusActivityMap';
 import { QualityRating } from '../components/QualityRating';
 import { SessionLog } from '../components/SessionLog';
 import { useAreaColors } from '../hooks/useAreaColors';
-import { api } from '../lib/api';
 import { getRecommendedDuration } from '../lib/analytics';
+import { loadSettings } from '../lib/settings';
 import { PomodoroShimmer } from '../components/Shimmer';
+
+const recommendationReasons: Record<25 | 45 | 90, string> = {
+  25: 'Recent rated sessions point to shorter blocks for stronger consistency.',
+  45: 'Recent sessions suggest you perform best with a balanced mid-length focus block.',
+  90: 'Recent rated sessions show you can sustain deep work with longer focus blocks.',
+};
 
 export function PomodoroPage() {
   const {
-    presetKey, selectPreset, presets,
-    phase, phaseLabel, sessionLabel,
-    totalSeconds, remainingSeconds, isRunning,
-    start, pause, reset,
-    loading, error,
+    presetKey,
+    selectPreset,
+    presets,
+    presetConfig,
+    phase,
+    phaseLabel,
+    sessionLabel,
+    totalSeconds,
+    remainingSeconds,
+    isRunning,
+    start,
+    pause,
+    reset,
+    loading,
+    error,
     todaySessions,
-    selectedArea, setSelectedArea,
-    intention, setIntentionText,
+    recentSessions,
+    selectedArea,
+    setSelectedArea,
+    intention,
+    setIntentionText,
     submitRating,
     focusAnalytics,
   } = usePomodoro();
   const { areas, getColor } = useAreaColors();
-  
-  const [showRecommendation, setShowRecommendation] = useState(false);
-  const [recentSessions, setRecentSessions] = useState<any[]>([]);
+  const [recommendationDismissed, setRecommendationDismissed] = useState(false);
 
-  // Fetch recent sessions for adaptive timer
-  useEffect(() => {
-    api.getRecentSessions(7).then(setRecentSessions).catch(console.error);
-  }, []);
+  const settings = useMemo(() => loadSettings(), []);
+  const recommendation = useMemo(() => {
+    if (recentSessions.length < 3) return null;
+    return getRecommendedDuration(recentSessions);
+  }, [recentSessions]);
 
-  // Get adaptive recommendation
-  const recommendation = recentSessions.length >= 3 
-    ? getRecommendedDuration(recentSessions)
-    : null;
-    
-  const canStart = phase === 'idle' || phase === 'rating';
+  const shouldShowRecommendation = Boolean(
+    recommendation &&
+    settings.preferences.showAdaptiveRecommendations &&
+    !recommendationDismissed &&
+    recommendation !== presetKey
+  );
 
   if (loading && todaySessions.length === 0) {
     return <PomodoroShimmer />;
   }
 
   return (
-    <div className="app-main">
+    <div className="page-shell">
       <div className="page-header animate-slide">
         <h1 className="page-title">Pomodoro</h1>
-        <p className="page-subtitle">Deep focus sessions with structured breaks</p>
+        <p className="page-subtitle">Deep focus sessions with structured breaks and adaptive coaching.</p>
       </div>
 
       {error && (
@@ -57,36 +75,45 @@ export function PomodoroPage() {
         </div>
       )}
 
-      {/* Adaptive Timer Recommendation */}
-      {recommendation && showRecommendation && (
-        <div className="recommendation-banner" onClick={() => { selectPreset(recommendation); setShowRecommendation(false); }}>
-          <span>Adaptive: Based on your recent sessions, we recommend {recommendation}m sessions</span>
-          <button className="recommendation-btn">Apply</button>
-        </div>
+      {shouldShowRecommendation && recommendation && (
+        <section className="recommendation-banner">
+          <div className="recommendation-copy">
+            <span className="recommendation-badge">Adaptive recommendation</span>
+            <strong>{recommendation} minute sessions</strong>
+            <p>{recommendationReasons[recommendation]}</p>
+          </div>
+          <div className="recommendation-actions">
+            <button
+              className="btn btn-primary"
+              type="button"
+              onClick={() => {
+                selectPreset(recommendation);
+                setRecommendationDismissed(true);
+              }}
+            >
+              Apply
+            </button>
+            <button className="btn btn-ghost" type="button" onClick={() => setRecommendationDismissed(true)}>
+              Dismiss
+            </button>
+          </div>
+        </section>
       )}
 
       <div className="pomodoro-grid">
-        {/* Main Timer Section */}
         <div className="pomodoro-main-area animate-in">
-          {/* Presets */}
           <div className="preset-buttons">
-            {presets.map(p => (
+            {presets.map(presetOption => (
               <button
-                key={p}
-                className={`preset-btn ${presetKey === p ? 'active' : ''}`}
-                onClick={() => selectPreset(p)}
+                key={presetOption}
+                className={`preset-btn ${presetKey === presetOption ? 'active' : ''}`}
+                onClick={() => selectPreset(presetOption)}
               >
-                {p}m
+                {presetOption}m
               </button>
             ))}
-            {recommendation && (
-              <button className="preset-btn preset-btn-adaptive" onClick={() => setShowRecommendation(true)}>
-                <span className="adaptive-icon">⚡</span>
-              </button>
-            )}
           </div>
 
-          {/* Intention Input */}
           {(phase === 'idle' || phase === 'rating') && (
             <div className="intention-input-wrapper">
               <input
@@ -94,14 +121,13 @@ export function PomodoroPage() {
                 className="intention-input"
                 placeholder="What will you focus on? (optional)"
                 value={intention}
-                onChange={(e) => setIntentionText(e.target.value)}
+                onChange={event => setIntentionText(event.target.value)}
                 maxLength={100}
               />
             </div>
           )}
 
-          <div className="timer-section-wrapper" style={{ position: 'relative' }}>
-            {/* Timer Ring */}
+          <div className="timer-section-wrapper">
             <TimerRing
               totalSeconds={totalSeconds}
               remainingSeconds={remainingSeconds}
@@ -113,27 +139,25 @@ export function PomodoroPage() {
             />
           </div>
 
-          {/* Area Selector */}
           <div className="area-selector">
-            {areas.map(a => {
-              const color = getColor(a);
+            {areas.map(area => {
+              const color = getColor(area);
               return (
                 <button
-                  key={a}
-                  className={`area-pill ${selectedArea === a ? 'active' : ''}`}
+                  key={area}
+                  className={`area-pill ${selectedArea === area ? 'active' : ''}`}
                   style={{
                     '--color': color,
                     '--shadow-color': `${color}60`,
                   } as CSSProperties}
-                  onClick={() => setSelectedArea(a)}
+                  onClick={() => setSelectedArea(area)}
                 >
-                  {a.charAt(0).toUpperCase() + a.slice(1)}
+                  {area.charAt(0).toUpperCase() + area.slice(1)}
                 </button>
               );
             })}
           </div>
 
-          {/* Controls */}
           <div className="timer-controls">
             <button className="timer-btn timer-btn-reset" onClick={reset} title="Reset">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -141,10 +165,10 @@ export function PomodoroPage() {
                 <path d="M3 3v5h5" />
               </svg>
             </button>
-            
+
             {phase === 'rating' ? (
-              <button className="timer-btn timer-btn-start" onClick={() => submitRating(3)} title="Skip Rating">
-                <span style={{ fontSize: 12, fontWeight: 700 }}>SKIP</span>
+              <button className="timer-btn timer-btn-start" onClick={() => submitRating(null)} title="Skip Rating">
+                <span className="timer-btn-label">SKIP</span>
               </button>
             ) : isRunning ? (
               <button className="timer-btn timer-btn-pause" onClick={pause} title="Pause">
@@ -162,23 +186,17 @@ export function PomodoroPage() {
             )}
           </div>
 
-          {/* Break info */}
-          <div style={{ textAlign: 'center', fontSize: 12, color: 'var(--text-muted)', fontWeight: 600, letterSpacing: '0.02em', opacity: 0.8 }}>
-            {presetKey === 25 && '5 minute breaks · 15 minute long breaks'}
-            {presetKey === 50 && '10 minute breaks · 25 minute long breaks'}
-            {presetKey === 90 && '20 minute breaks · 45 minute long breaks'}
+          <div className="pomodoro-break-summary">
+            {presetConfig.shortBreak} minute short breaks · {presetConfig.longBreak} minute long breaks · long break every {presetConfig.cyclesBeforeLong} cycles
           </div>
         </div>
 
-        {/* Info & Stats Section */}
         <div className="pomodoro-stats-area">
-          {/* Activity Map */}
           <FocusActivityMap analytics={focusAnalytics} loading={loading} />
 
-          {/* Session Log */}
           {todaySessions.length > 0 && (
-            <div className="pomodoro-log animate-in" style={{ animationDelay: '0.2s' }}>
-              <div className="section-title" style={{ fontSize: 13, color: 'var(--text-accent)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 'var(--gap-md)' }}>
+            <div className="pomodoro-log animate-in pomodoro-log-card">
+              <div className="section-title pomodoro-log-title">
                 Session History
               </div>
               <SessionLog sessions={todaySessions} />
@@ -187,76 +205,7 @@ export function PomodoroPage() {
         </div>
       </div>
 
-      {/* Quality Rating Overlay */}
-      {phase === 'rating' && (
-        <QualityRating onRate={submitRating} />
-      )}
-
-      <style>{`
-        .recommendation-banner {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          padding: var(--gap-md) var(--gap-lg);
-          background: linear-gradient(135deg, rgba(0, 255, 204, 0.1), rgba(0, 255, 204, 0.05));
-          border: 1px solid var(--accent);
-          border-radius: var(--radius-md);
-          margin-bottom: var(--gap-lg);
-          cursor: pointer;
-          transition: all 0.3s ease;
-          animation: slideIn 0.4s var(--ease-out);
-        }
-        .recommendation-banner:hover {
-          background: linear-gradient(135deg, rgba(0, 255, 204, 0.15), rgba(0, 255, 204, 0.1));
-        }
-        .recommendation-btn {
-          padding: 6px 16px;
-          background: var(--accent);
-          color: var(--bg-primary);
-          border: none;
-          border-radius: var(--radius-sm);
-          font-weight: 700;
-          font-size: 12px;
-          cursor: pointer;
-        }
-        .intention-input-wrapper {
-          margin-bottom: var(--gap-lg);
-        }
-        .intention-input {
-          width: 100%;
-          padding: 12px 16px;
-          background: var(--bg-secondary);
-          border: 1px solid var(--border);
-          border-radius: var(--radius-md);
-          color: var(--text-primary);
-          font-size: 14px;
-          text-align: center;
-          transition: all 0.2s ease;
-        }
-        .intention-input:focus {
-          outline: none;
-          border-color: var(--accent);
-          box-shadow: 0 0 0 3px rgba(0, 255, 204, 0.1);
-        }
-        .intention-input::placeholder {
-          color: var(--text-muted);
-        }
-        .preset-btn-adaptive {
-          padding: 8px 12px;
-          background: rgba(0, 255, 204, 0.1);
-          border: 1px solid var(--accent) !important;
-        }
-        .adaptive-icon {
-          font-size: 14px;
-        }
-        .pomodorolog {
-          width: 100%;
-        }
-        @keyframes slideIn {
-          from { opacity: 0; transform: translateY(-10px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-      `}</style>
+      {phase === 'rating' && <QualityRating onRate={submitRating} />}
     </div>
   );
 }

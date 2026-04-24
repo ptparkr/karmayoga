@@ -45,7 +45,9 @@ export function useHealth() {
           if (settings.dateOfBirth) {
             age = getAgeFromDOB(settings.dateOfBirth);
           }
-        } catch(e) {}
+        } catch(e) {
+          console.warn('Failed to parse settings from localStorage:', e);
+        }
       }
 
       const [status, lon, tr, mk] = await Promise.all([

@@ -7,6 +7,7 @@ interface Props {
 
 export function WeeklyReport({ report }: Props) {
   const [expanded, setExpanded] = useState(false);
+  const [copied, setCopied] = useState(false);
   const hours = Math.floor(report.totalFocusMinutes / 60);
   const minutes = report.totalFocusMinutes % 60;
 
@@ -18,7 +19,10 @@ export function WeeklyReport({ report }: Props) {
   const copyToClipboard = () => {
     const text = generatePlainText(report);
     navigator.clipboard.writeText(text).then(() => {
-      alert('Report copied to clipboard!');
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }).catch((err) => {
+      console.error('Failed to copy:', err);
     });
   };
 
@@ -137,7 +141,7 @@ export function WeeklyReport({ report }: Props) {
 
           <div className="weekly-report-actions">
             <button className="btn btn-ghost" onClick={copyToClipboard}>
-              📋 Copy Report
+              {copied ? '✓ Copied!' : '📋 Copy Report'}
             </button>
           </div>
         </div>

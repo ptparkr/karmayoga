@@ -23,7 +23,7 @@ export function WheelPage() {
 
   if (loading) {
     return (
-      <div className="wheel-page">
+      <div className="page-shell wheel-page">
         <div className="wheel-loading">
           <div className="wheel-spinner" />
           <p>Loading your Wheel of Life...</p>
@@ -34,7 +34,7 @@ export function WheelPage() {
 
   if (error) {
     return (
-      <div className="wheel-page">
+      <div className="page-shell wheel-page">
         <div className="wheel-error">
           <p>Error: {error}</p>
           <button onClick={() => refresh()} className="btn btn-primary">
@@ -48,7 +48,7 @@ export function WheelPage() {
   const recentSnapshots = snapshots.slice(-12);
 
   return (
-    <div className="wheel-page">
+    <div className="page-shell wheel-page">
       <header className="page-header">
         <div className="wheel-header-top">
           <div>

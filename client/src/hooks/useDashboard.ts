@@ -28,7 +28,9 @@ function getDashboardCached(): DashboardCache | null {
 function setDashboardCached(data: DashboardCache): void {
   try {
     localStorage.setItem(DASHBOARD_CACHE_KEY, JSON.stringify(data));
-  } catch {}
+  } catch (err) {
+    console.warn('Failed to cache dashboard data:', err);
+  }
 }
 
 const getInitialState = () => {
@@ -121,7 +123,7 @@ export function useDashboard() {
   const toggleCheckin = useCallback(async (habitId: string, date: string) => {
     try {
       await api.toggleCheckin(habitId, date);
-      load();
+      load(true);
     } catch (err) {
       console.error('Failed to toggle checkin:', err);
     }
