@@ -22,12 +22,12 @@ const AXIS_LABELS: Record<WheelAxisId, string> = {
   joy: 'Joy',
 };
 
-export function WheelOfLife({ axes, editable = false, size = 480, onAxisChange }: WheelOfLifeProps) {
+export function WheelOfLife({ axes, editable = false, size = 600, onAxisChange }: WheelOfLifeProps) {
   const { getColor } = useAreaColors();
   const cx = size / 2;
   const cy = size / 2;
-  const innerRadius = 50;
-  const outerRadius = size / 2 - 70;
+  const innerRadius = 0;
+  const outerRadius = size / 2 - 80;
   const wedgeAngle = 36; // 360 / 10
   const segmentGap = 1.5;
   const radialGap = 2;
@@ -82,20 +82,29 @@ export function WheelOfLife({ axes, editable = false, size = 480, onAxisChange }
           const midAngle = startAngle + (endAngle - startAngle) / 2;
           const color = getColor(axis.id);
           
-          const labelPos = polarToCartesian(midAngle, outerRadius + 45);
-          const scorePos = polarToCartesian(midAngle, outerRadius + 25);
+          const labelRadius = outerRadius + 30;
+          const labelPos = polarToCartesian(midAngle, labelRadius);
+          
+          // Determine text anchor based on angle to avoid overlapping the wheel
+          let textAnchor: 'start' | 'end' | 'middle' = 'middle';
+          const normalizedAngle = midAngle % 360;
+          if (normalizedAngle > 20 && normalizedAngle < 160) {
+            textAnchor = 'start';
+          } else if (normalizedAngle > 200 && normalizedAngle < 340) {
+            textAnchor = 'end';
+          }
 
           return (
             <g key={axis.id} className="wheel-wedge">
               {/* Labels */}
               <text
                 x={labelPos.x}
-                y={labelPos.y}
-                textAnchor="middle"
+                y={labelPos.y - 6}
+                textAnchor={textAnchor}
                 dominantBaseline="middle"
                 className="wheel-axis-label"
                 fill="var(--text-secondary)"
-                fontSize="11"
+                fontSize="10"
                 fontWeight="800"
                 style={{ textTransform: 'uppercase', letterSpacing: '0.05em' }}
               >
@@ -103,9 +112,9 @@ export function WheelOfLife({ axes, editable = false, size = 480, onAxisChange }
               </text>
               
               <text
-                x={scorePos.x}
-                y={scorePos.y}
-                textAnchor="middle"
+                x={labelPos.x}
+                y={labelPos.y + 6}
+                textAnchor={textAnchor}
                 dominantBaseline="middle"
                 fill={color}
                 fontSize="10"
@@ -165,7 +174,6 @@ export function WheelOfLife({ axes, editable = false, size = 480, onAxisChange }
         })}
         
         {/* Center Aesthetic */}
-        <circle cx={cx} cy={cy} r={innerRadius - 10} fill="var(--bg-secondary)" stroke="var(--border)" strokeWidth="1" />
         <circle cx={cx} cy={cy} r={4} fill="var(--accent)" filter="url(#active-glow)" />
       </svg>
 

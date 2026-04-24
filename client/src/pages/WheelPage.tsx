@@ -94,7 +94,7 @@ export function WheelPage() {
           <WheelOfLife
             axes={axes}
             editable={editable}
-            size={isExpanded ? 500 : 400}
+            size={isExpanded ? 700 : 560}
             onAxisChange={handleAxisChange}
           />
           
