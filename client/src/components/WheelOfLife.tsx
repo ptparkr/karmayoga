@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import type { WheelAxis, WheelAxisId } from '../types';
 import { useAreaColors } from '../hooks/useAreaColors';
 
@@ -22,48 +22,40 @@ const AXIS_LABELS: Record<WheelAxisId, string> = {
   joy: 'Joy',
 };
 
-const AXIS_GROUPS: Record<WheelAxisId, string> = {
-  body: 'Health',
-  mind: 'Health',
-  soul: 'Health',
-  growth: 'Work',
-  money: 'Work',
-  mission: 'Work',
-  romance: 'Relationships',
-  family: 'Relationships',
-  friends: 'Relationships',
-  joy: 'Joy',
-};
-
-export function WheelOfLife({ axes, editable = false, size = 450, onAxisChange }: WheelOfLifeProps) {
+export function WheelOfLife({ axes, editable = false, size = 480, onAxisChange }: WheelOfLifeProps) {
   const { getColor } = useAreaColors();
   const cx = size / 2;
   const cy = size / 2;
-  const innerRadius = 40;
-  const maxRadius = size / 2 - 60;
-  const barThickness = 12;
-  const segmentGap = 2;
-  const numSegments = 10;
-  
-  const angleStep = (2 * Math.PI) / 10;
+  const innerRadius = 50;
+  const outerRadius = size / 2 - 70;
+  const wedgeAngle = 36; // 360 / 10
+  const segmentGap = 1.5;
+  const radialGap = 2;
 
-  const getSegmentPath = (angle: number, index: number) => {
-    const rStart = innerRadius + (index * (maxRadius - innerRadius)) / numSegments + segmentGap;
-    const rEnd = innerRadius + ((index + 1) * (maxRadius - innerRadius)) / numSegments;
-    
-    // Slight arc for the segment
-    const halfWidth = (Math.PI / 180) * 8; // 8 degrees wide segments
-    
-    const x1 = cx + rStart * Math.cos(angle - halfWidth);
-    const y1 = cy + rStart * Math.sin(angle - halfWidth);
-    const x2 = cx + rEnd * Math.cos(angle - halfWidth);
-    const y2 = cy + rEnd * Math.sin(angle - halfWidth);
-    const x3 = cx + rEnd * Math.cos(angle + halfWidth);
-    const y3 = cy + rEnd * Math.sin(angle + halfWidth);
-    const x4 = cx + rStart * Math.cos(angle + halfWidth);
-    const y4 = cy + rStart * Math.sin(angle + halfWidth);
+  const polarToCartesian = (angleDeg: number, radius: number) => {
+    const angleRad = (angleDeg - 90) * (Math.PI / 180);
+    return {
+      x: cx + radius * Math.cos(angleRad),
+      y: cy + radius * Math.sin(angleRad),
+    };
+  };
 
-    return `M ${x1} ${y1} L ${x2} ${y2} A ${rEnd} ${rEnd} 0 0 1 ${x3} ${y3} L ${x4} ${y4} A ${rStart} ${rStart} 0 0 0 ${x1} ${y1} Z`;
+  const getArcPath = (startAngle: number, endAngle: number, rIn: number, rOut: number) => {
+    const p1 = polarToCartesian(startAngle, rIn);
+    const p2 = polarToCartesian(startAngle, rOut);
+    const p3 = polarToCartesian(endAngle, rOut);
+    const p4 = polarToCartesian(endAngle, rIn);
+
+    const largeArc = endAngle - startAngle > 180 ? 1 : 0;
+
+    return `
+      M ${p1.x} ${p1.y}
+      L ${p2.x} ${p2.y}
+      A ${rOut} ${rOut} 0 ${largeArc} 1 ${p3.x} ${p3.y}
+      L ${p4.x} ${p4.y}
+      A ${rIn} ${rIn} 0 ${largeArc} 0 ${p1.x} ${p1.y}
+      Z
+    `;
   };
 
   return (
@@ -75,121 +67,144 @@ export function WheelOfLife({ axes, editable = false, size = 450, onAxisChange }
         className="wheel-svg"
       >
         <defs>
-          <filter id="segment-glow" x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur stdDeviation="2" result="blur" />
+          <filter id="active-glow" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="2.5" result="blur" />
             <feComposite in="SourceGraphic" in2="blur" operator="over" />
           </filter>
         </defs>
 
-        {/* Center Guide */}
-        <circle cx={cx} cy={cy} r={innerRadius - 5} fill="none" stroke="var(--border)" strokeWidth="1" opacity="0.3" />
+        {/* Outer Background Ring */}
+        <circle cx={cx} cy={cy} r={outerRadius + 10} fill="none" stroke="var(--border)" strokeWidth="0.5" opacity="0.2" />
 
-        {/* Axes and Segments */}
         {axes.map((axis, i) => {
-          const angle = angleStep * i - Math.PI / 2;
-          const labelRadius = maxRadius + 35;
-          const labelX = cx + labelRadius * Math.cos(angle);
-          const labelY = cy + labelRadius * Math.sin(angle);
+          const startAngle = i * wedgeAngle + segmentGap;
+          const endAngle = (i + 1) * wedgeAngle - segmentGap;
+          const midAngle = startAngle + (endAngle - startAngle) / 2;
           const color = getColor(axis.id);
+          
+          const labelPos = polarToCartesian(midAngle, outerRadius + 45);
+          const scorePos = polarToCartesian(midAngle, outerRadius + 25);
 
           return (
-            <g key={axis.id} className="wheel-axis-group">
-              {/* Background Segments (Empty) */}
-              {Array.from({ length: 10 }).map((_, idx) => (
-                <path
-                  key={`bg-${axis.id}-${idx}`}
-                  d={getSegmentPath(angle, idx)}
-                  fill="var(--bg-tertiary)"
-                  opacity="0.1"
-                  stroke="var(--border)"
-                  strokeWidth="0.5"
-                  className="wheel-segment-bg"
-                />
-              ))}
-
-              {/* Target Score Indicator (Ghost) */}
-              {Array.from({ length: axis.targetScore }).map((_, idx) => (
-                <path
-                  key={`target-${axis.id}-${idx}`}
-                  d={getSegmentPath(angle, idx)}
-                  fill="none"
-                  stroke={color}
-                  strokeWidth="1"
-                  strokeDasharray="2 2"
-                  opacity="0.3"
-                />
-              ))}
-
-              {/* Current Score Segments (Filled) */}
-              {Array.from({ length: axis.currentScore }).map((_, idx) => (
-                <path
-                  key={`fill-${axis.id}-${idx}`}
-                  d={getSegmentPath(angle, idx)}
-                  fill={color}
-                  className="wheel-segment-fill"
-                  style={{ 
-                    filter: idx === axis.currentScore - 1 ? 'url(#segment-glow)' : 'none',
-                    transition: 'all 0.3s ease'
-                  }}
-                  onClick={() => onAxisChange?.(axis.id, idx + 1, 'current')}
-                  cursor={editable ? 'pointer' : 'default'}
-                />
-              ))}
-
-              {/* Label */}
+            <g key={axis.id} className="wheel-wedge">
+              {/* Labels */}
               <text
-                x={labelX}
-                y={labelY}
+                x={labelPos.x}
+                y={labelPos.y}
                 textAnchor="middle"
                 dominantBaseline="middle"
                 className="wheel-axis-label"
                 fill="var(--text-secondary)"
                 fontSize="11"
-                fontWeight="700"
+                fontWeight="800"
+                style={{ textTransform: 'uppercase', letterSpacing: '0.05em' }}
               >
                 {AXIS_LABELS[axis.id]}
               </text>
+              
               <text
-                x={labelX}
-                y={labelY + 12}
+                x={scorePos.x}
+                y={scorePos.y}
                 textAnchor="middle"
                 dominantBaseline="middle"
                 fill={color}
                 fontSize="10"
-                fontWeight="800"
-                opacity="0.8"
+                fontWeight="900"
+                opacity="0.9"
               >
-                {axis.currentScore}/10
+                {axis.currentScore}/{axis.targetScore}
               </text>
+
+              {/* Segments (10 levels) */}
+              {Array.from({ length: 10 }).map((_, level) => {
+                const r1 = innerRadius + (level * (outerRadius - innerRadius)) / 10 + radialGap;
+                const r2 = innerRadius + ((level + 1) * (outerRadius - innerRadius)) / 10;
+                const levelNum = level + 1;
+                
+                let fill = 'var(--bg-tertiary)';
+                let opacity = '0.1';
+                let stroke = 'var(--border)';
+                let filter = 'none';
+
+                if (levelNum <= axis.currentScore) {
+                  fill = color;
+                  opacity = '1';
+                  stroke = 'none';
+                  if (levelNum === axis.currentScore) filter = 'url(#active-glow)';
+                } else if (levelNum <= axis.targetScore) {
+                  fill = 'var(--text-muted)';
+                  opacity = '0.35';
+                  stroke = 'rgba(255,255,255,0.1)';
+                }
+
+                return (
+                  <path
+                    key={`${axis.id}-${level}`}
+                    d={getArcPath(startAngle, endAngle, r1, r2)}
+                    fill={fill}
+                    opacity={opacity}
+                    stroke={stroke}
+                    strokeWidth="0.5"
+                    className="wheel-segment"
+                    style={{ 
+                      filter,
+                      transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+                      cursor: editable ? 'pointer' : 'default'
+                    }}
+                    onClick={() => {
+                      if (!editable) return;
+                      // Logic: if click level > current, set current to this level. 
+                      // If click already filled, could toggle down? Let's just set.
+                      onAxisChange?.(axis.id, levelNum, 'current');
+                    }}
+                  />
+                );
+              })}
             </g>
           );
         })}
+        
+        {/* Center Aesthetic */}
+        <circle cx={cx} cy={cy} r={innerRadius - 10} fill="var(--bg-secondary)" stroke="var(--border)" strokeWidth="1" />
+        <circle cx={cx} cy={cy} r={4} fill="var(--accent)" filter="url(#active-glow)" />
       </svg>
 
       {editable && (
         <div className="wheel-sliders">
-          {axes.map((axis) => (
-            <div key={axis.id} className="wheel-slider-row">
-              <label className="wheel-slider-label">
-                <span style={{ color: getColor(axis.id) }}>●</span> {AXIS_LABELS[axis.id]}
-              </label>
-              <div className="wheel-slider-inputs">
-                <div className="wheel-slider-field">
-                  <input
-                    type="range"
-                    min="0"
-                    max="10"
-                    step="1"
-                    value={axis.currentScore}
-                    onChange={(e) => onAxisChange?.(axis.id, Number(e.target.value), 'current')}
-                    className="wheel-range"
-                    style={{ '--accent': getColor(axis.id) } as any}
-                  />
-                  <span className="wheel-slider-value">{axis.currentScore}</span>
+          <div className="wheel-sliders-grid">
+            {axes.map((axis) => (
+              <div key={axis.id} className="wheel-slider-card card">
+                <div className="wheel-slider-header">
+                  <span className="dot" style={{ background: getColor(axis.id) }} />
+                  <strong>{AXIS_LABELS[axis.id]}</strong>
+                </div>
+                
+                <div className="wheel-slider-controls">
+                  <div className="control-group">
+                    <label>Current: {axis.currentScore}</label>
+                    <input
+                      type="range"
+                      min="0"
+                      max="10"
+                      value={axis.currentScore}
+                      onChange={(e) => onAxisChange?.(axis.id, Number(e.target.value), 'current')}
+                      style={{ '--accent': getColor(axis.id) } as any}
+                    />
+                  </div>
+                  <div className="control-group target">
+                    <label>Target: {axis.targetScore}</label>
+                    <input
+                      type="range"
+                      min="0"
+                      max="10"
+                      value={axis.targetScore}
+                      onChange={(e) => onAxisChange?.(axis.id, Number(e.target.value), 'target')}
+                    />
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       )}
     </div>
