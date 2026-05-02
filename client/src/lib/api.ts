@@ -88,6 +88,8 @@ export const api = {
     const query = params.toString() ? `?${params.toString()}` : '';
     return request<FocusAnalytics>(`/pomodoro/analytics${query}`);
   },
+  runRustAnalytics: (payload: unknown) =>
+    request<unknown>('/utils/rust-analytics', { method: 'POST', body: JSON.stringify(payload) }),
 
   // Areas
   getAreaColors: () => request<AreaColor[]>('/areas'),

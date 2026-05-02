@@ -2,7 +2,26 @@ import initSqlJs, { Database } from 'sql.js';
 import fs from 'fs';
 import path from 'path';
 
-const DB_PATH = path.join(__dirname, '..', 'karma-yoga.db');
+function resolveDbPath(): string {
+  if (process.env.KARMA_DB_PATH) {
+    return process.env.KARMA_DB_PATH;
+  }
+
+  const dbFileName = process.env.KARMA_DB_FILE || 'karma-yoga.db';
+  if (process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME) {
+    const tempDir = process.env.TMPDIR || '/tmp';
+    return path.join(tempDir, dbFileName);
+  }
+
+  const cwd = process.cwd();
+  const workspaceRoot = path.basename(cwd).toLowerCase() === 'server'
+    ? path.resolve(cwd, '..')
+    : cwd;
+
+  return path.join(workspaceRoot, dbFileName);
+}
+
+const DB_PATH = resolveDbPath();
 
 let db: Database;
 
@@ -169,6 +188,7 @@ export function getDb(): Database {
 }
 
 export function saveDb(): void {
+  fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
   const data = db.export();
   const buffer = Buffer.from(data);
   fs.writeFileSync(DB_PATH, buffer);

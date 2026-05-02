@@ -26,6 +26,30 @@ interface FetchResult<T> {
   errors: string[];
 }
 
+interface RustAnalyticsResult {
+  momentum: MomentumDataPoint[];
+  peakHours: PeakHourCell[][];
+  areaBalance: AreaBalanceData[];
+  sleepFocusData: CorrelationPoint[];
+  sleepFocusRegression: { slope: number; intercept: number };
+  weeklyReport: WeeklyReportData;
+}
+
+function isRustAnalyticsResult(value: unknown): value is RustAnalyticsResult {
+  if (!value || typeof value !== 'object') return false;
+  const candidate = value as Partial<RustAnalyticsResult>;
+  return (
+    Array.isArray(candidate.momentum) &&
+    Array.isArray(candidate.peakHours) &&
+    Array.isArray(candidate.areaBalance) &&
+    Array.isArray(candidate.sleepFocusData) &&
+    typeof candidate.sleepFocusRegression === 'object' &&
+    candidate.sleepFocusRegression !== null &&
+    typeof candidate.weeklyReport === 'object' &&
+    candidate.weeklyReport !== null
+  );
+}
+
 async function settleValue<T>(label: string, loader: () => Promise<T>, fallback: T): Promise<FetchResult<T>> {
   try {
     return { data: await loader(), errors: [] };
@@ -154,22 +178,51 @@ export function useAnalytics() {
     setWheelAxes(wheelFallback.axes);
     setWheelSnapshots(wheelFallback.snapshots || []);
 
-    setMomentum(momentumTimeSeries(sessionsData));
-    setPeakHours(peakHoursGrid(sessionsData));
-    setAreaBalance(areaBalanceByAreas(sessionsData, derivedAreas, 8));
-    setSleepFocusData(correlationData);
-    setSleepFocusRegression(linearRegression(regressionData));
-    setWeeklyReport(
-      buildWeeklyReport(
-        sessionsData,
-        healthResult.data,
-        habitsData,
+    let usedRustCore = false;
+    try {
+      const rustPayload = {
+        sessions: sessionsData,
+        checkins: healthResult.data,
+        habits: habitsData,
         habitEntries,
-        wheelFallback.axes
-      )
-    );
+        wheelAxes: wheelFallback.axes,
+        areas: derivedAreas,
+        weeks: 8,
+      };
+      const rustResult = await api.runRustAnalytics(rustPayload);
+      if (isRustAnalyticsResult(rustResult)) {
+        setMomentum(rustResult.momentum);
+        setPeakHours(rustResult.peakHours);
+        setAreaBalance(rustResult.areaBalance);
+        setSleepFocusData(rustResult.sleepFocusData);
+        setSleepFocusRegression(rustResult.sleepFocusRegression);
+        setWeeklyReport(rustResult.weeklyReport);
+        usedRustCore = true;
+      } else {
+        console.warn('Rust analytics returned an unexpected payload shape.');
+      }
+    } catch (err) {
+      console.warn('Rust analytics unavailable, falling back to TypeScript analytics.', err);
+    }
 
-    setError(errors.length > 0 ? `Some analytics data could not be loaded (${errors.join(' · ')})` : null);
+    if (!usedRustCore) {
+      setMomentum(momentumTimeSeries(sessionsData));
+      setPeakHours(peakHoursGrid(sessionsData));
+      setAreaBalance(areaBalanceByAreas(sessionsData, derivedAreas, 8));
+      setSleepFocusData(correlationData);
+      setSleepFocusRegression(linearRegression(regressionData));
+      setWeeklyReport(
+        buildWeeklyReport(
+          sessionsData,
+          healthResult.data,
+          habitsData,
+          habitEntries,
+          wheelFallback.axes
+        )
+      );
+    }
+
+    setError(errors.length > 0 ? `Some analytics data could not be loaded (${errors.join(' | ')})` : null);
     setLoading(false);
   }, [areaColorsList]);
 
