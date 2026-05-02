@@ -9,6 +9,25 @@ exports.saveDb = saveDb;
 const sql_js_1 = __importDefault(require("sql.js"));
 const fs_1 = __importDefault(require("fs"));
 const path_1 = __importDefault(require("path"));
+function resolveSqlJsLocateFile(file) {
+    const candidates = [
+        path_1.default.join(process.cwd(), 'server', 'node_modules', 'sql.js', 'dist', file),
+        path_1.default.join(process.cwd(), 'node_modules', 'sql.js', 'dist', file),
+        path_1.default.join(__dirname, '..', 'node_modules', 'sql.js', 'dist', file),
+        path_1.default.join('/var/task/server/node_modules/sql.js/dist', file),
+    ];
+    for (const candidate of candidates) {
+        if (fs_1.default.existsSync(candidate)) {
+            return candidate;
+        }
+    }
+    try {
+        return require.resolve(`sql.js/dist/${file}`);
+    }
+    catch {
+        return file;
+    }
+}
 function resolveDbPath() {
     if (process.env.KARMA_DB_PATH) {
         return process.env.KARMA_DB_PATH;
@@ -27,7 +46,9 @@ function resolveDbPath() {
 const DB_PATH = resolveDbPath();
 let db;
 async function initDb() {
-    const SQL = await (0, sql_js_1.default)();
+    const SQL = await sql_js_1.default({
+        locateFile: resolveSqlJsLocateFile,
+    });
     if (fs_1.default.existsSync(DB_PATH)) {
         const buffer = fs_1.default.readFileSync(DB_PATH);
         db = new SQL.Database(buffer);

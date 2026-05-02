@@ -2,6 +2,27 @@ import initSqlJs, { Database } from 'sql.js';
 import fs from 'fs';
 import path from 'path';
 
+function resolveSqlJsLocateFile(file: string): string {
+  const candidates = [
+    path.join(process.cwd(), 'server', 'node_modules', 'sql.js', 'dist', file),
+    path.join(process.cwd(), 'node_modules', 'sql.js', 'dist', file),
+    path.join(__dirname, '..', 'node_modules', 'sql.js', 'dist', file),
+    path.join('/var/task/server/node_modules/sql.js/dist', file),
+  ];
+
+  for (const candidate of candidates) {
+    if (fs.existsSync(candidate)) {
+      return candidate;
+    }
+  }
+
+  try {
+    return require.resolve(`sql.js/dist/${file}`);
+  } catch {
+    return file;
+  }
+}
+
 function resolveDbPath(): string {
   if (process.env.KARMA_DB_PATH) {
     return process.env.KARMA_DB_PATH;
@@ -26,7 +47,9 @@ const DB_PATH = resolveDbPath();
 let db: Database;
 
 export async function initDb(): Promise<Database> {
-  const SQL = await initSqlJs();
+  const SQL = await (initSqlJs as any)({
+    locateFile: resolveSqlJsLocateFile,
+  });
 
   if (fs.existsSync(DB_PATH)) {
     const buffer = fs.readFileSync(DB_PATH);
