@@ -52,11 +52,8 @@ export declare function createOrUpdateCheckin(data: {
     moodScore: number | null;
     notes: string;
 };
-export declare function getHealthTrends(metric: string, days?: number): {
-    date: string;
-    value: number;
-}[];
-export declare function getLongevityScore(): {
+export declare function getHealthTrends(metric: string, days?: number): any[];
+export declare function getLongevityScore(age?: number): {
     score: number;
     biologicalAge: number;
     ageDelta: number;

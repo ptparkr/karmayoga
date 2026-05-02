@@ -1,6 +1,7 @@
 {
   "version": 2,
-  "buildCommand": "npm run install:all && npm run build:all",
+  "installCommand": "npm run install:all",
+  "buildCommand": "npm run build:client",
   "outputDirectory": "client/dist",
   "functions": {
     "api/**/*.ts": {
@@ -13,7 +14,7 @@
       "destination": "/api/:path*"
     },
     {
-      "source": "/:path*",
+      "source": "/((?!api/|assets/|.*\\..*).*)",
       "destination": "/index.html"
     }
   ]

@@ -62,7 +62,7 @@ router.get('/analytics', (req, res) => {
         rangeEnd = endDate;
         const start = new Date(rangeStart);
         const end = new Date(rangeEnd);
-        daysCount = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+        daysCount = Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
     }
     else {
         const timeInfo = (0, time_1.getCurrentTimeInfo)();
@@ -85,7 +85,7 @@ router.get('/analytics', (req, res) => {
     areaStmt.free();
     // Focus by Day for the requested date range
     const dailyStmt = db.prepare(`
-    SELECT date(created_at) as date, SUM(focus_min) as total_min
+    SELECT date(created_at, 'localtime') as date, SUM(focus_min) as total_min
     FROM pomodoro_sessions
     WHERE completed = 1 AND date(created_at, 'localtime') >= ? AND date(created_at, 'localtime') <= ?
     GROUP BY date(created_at, 'localtime')
@@ -98,11 +98,11 @@ router.get('/analytics', (req, res) => {
     dailyStmt.free();
     // Generate all dates in range
     const weekDays = [];
-    const start = new Date(rangeStart + 'T00:00:00');
+    const startLocal = new Date(rangeStart + 'T00:00:00');
     for (let i = 0; i < daysCount; i++) {
-        const d = new Date(start);
-        d.setDate(start.getDate() + i);
-        const dStr = d.toISOString().split('T')[0];
+        const d = new Date(startLocal);
+        d.setDate(startLocal.getDate() + i);
+        const dStr = (0, time_1.toDateStr)(d);
         const match = byDayRaw.find(r => r.date === dStr);
         weekDays.push({
             date: dStr,

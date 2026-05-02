@@ -125,6 +125,33 @@ function getHealthTrends(metric, days = 30) {
     const db = (0, db_1.getDb)();
     const endDate = new Date().toISOString().slice(0, 10);
     const startDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    // Return all checkins if metric is 'all'
+    if (metric === 'all') {
+        const stmt = db.prepare(`
+      SELECT * FROM health_checkins 
+      WHERE date BETWEEN ? AND ?
+      ORDER BY date ASC
+    `);
+        stmt.bind([startDate, endDate]);
+        const results = [];
+        while (stmt.step()) {
+            const row = stmt.getAsObject();
+            results.push({
+                id: row.id,
+                date: row.date,
+                hrv: row.hrv,
+                sleepHours: row.sleep_hours,
+                sleepQuality: row.sleep_quality,
+                restingHR: row.resting_hr,
+                steps: row.steps,
+                energyLevel: row.energy_level,
+                moodScore: row.mood_score,
+                notes: row.notes || '',
+            });
+        }
+        stmt.free();
+        return results;
+    }
     const metricMap = {
         hrv: 'hrv',
         sleep: 'sleep_hours',
@@ -150,7 +177,7 @@ function getHealthTrends(metric, days = 30) {
     stmt.free();
     return results;
 }
-function getLongevityScore() {
+function getLongevityScore(age = 25) {
     const db = (0, db_1.getDb)();
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
     // Get average of last 30 days
@@ -183,7 +210,7 @@ function getLongevityScore() {
         };
     }
     stmt.free();
-    return calculateLongevity(input);
+    return calculateLongevity(input, age);
 }
 // Biological markers
 function createMarker(data) {
@@ -253,8 +280,9 @@ router.get('/trends/:metric', (req, res) => {
     const result = getHealthTrends(metric, days);
     res.json(result);
 });
-router.get('/longevity', (_req, res) => {
-    const result = getLongevityScore();
+router.get('/longevity', (req, res) => {
+    const age = parseInt(req.query.age) || 25;
+    const result = getLongevityScore(age);
     res.json(result);
 });
 router.post('/markers', (req, res) => {
@@ -264,6 +292,11 @@ router.post('/markers', (req, res) => {
 });
 router.get('/markers', (_req, res) => {
     const result = getMarkers();
+    res.json(result);
+});
+router.get('/checkins', (req, res) => {
+    const days = parseInt(req.query.days) || 30;
+    const result = getHealthTrends('all', days);
     res.json(result);
 });
 exports.default = router;

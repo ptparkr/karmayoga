@@ -37,6 +37,34 @@ router.post('/', (req, res) => {
     stmt.free();
     res.status(201).json(habit);
 });
+// GET /api/habits/all/checkins — batch fetch ALL habits and their checkins in one call
+router.get('/all/checkins', (_req, res) => {
+    const db = (0, db_1.getDb)();
+    // Get all habits
+    const habitsStmt = db.prepare('SELECT id, name, area, target_days FROM habits ORDER BY area, created_at');
+    const habits = [];
+    while (habitsStmt.step()) {
+        habits.push(habitsStmt.getAsObject());
+    }
+    habitsStmt.free();
+    // Get all checkins grouped by habit_id
+    const checkinsStmt = db.prepare('SELECT habit_id, date FROM checkins ORDER BY habit_id, date');
+    const checkinsMap = {};
+    while (checkinsStmt.step()) {
+        const row = checkinsStmt.getAsObject();
+        if (!checkinsMap[row.habit_id]) {
+            checkinsMap[row.habit_id] = [];
+        }
+        checkinsMap[row.habit_id].push(row.date);
+    }
+    checkinsStmt.free();
+    // Build response with checkins embedded
+    const results = habits.map(habit => ({
+        ...habit,
+        checkins: checkinsMap[habit.id] || [],
+    }));
+    res.json(results);
+});
 // DELETE /api/habits/:id — delete habit + cascade check-ins
 router.delete('/:id', (req, res) => {
     const { id } = req.params;
