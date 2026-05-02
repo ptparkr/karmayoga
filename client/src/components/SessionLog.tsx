@@ -1,4 +1,3 @@
-import { api } from '../lib/api';
 import { useAreaColors } from '../hooks/useAreaColors';
 import type { PomodoroSession } from '../types';
 
@@ -65,85 +64,6 @@ export function SessionLog({ sessions }: Props) {
           );
         })}
       </div>
-
-      <style>{`
-        .session-log {
-          width: 100%;
-        }
-        .session-log-empty {
-          padding: var(--gap-lg);
-          text-align: center;
-          color: var(--text-muted);
-        }
-        .session-timeline {
-          display: flex;
-          flex-direction: column;
-          gap: var(--gap-sm);
-        }
-        .session-item {
-          display: flex;
-          align-items: flex-start;
-          gap: var(--gap-md);
-          padding: var(--gap-sm);
-          border-radius: var(--radius-md);
-          background: var(--bg-tertiary);
-          transition: all 0.2s ease;
-        }
-        .session-item:hover {
-          background: var(--bg-secondary);
-        }
-        .session-dot {
-          width: 8px;
-          height: 8px;
-          border-radius: 50%;
-          flex-shrink: 0;
-          margin-top: 6px;
-        }
-        .session-content {
-          flex: 1;
-          min-width: 0;
-        }
-        .session-header {
-          display: flex;
-          align-items: center;
-          gap: var(--gap-sm);
-          flex-wrap: wrap;
-        }
-        .session-time {
-          font-size: 12px;
-          font-weight: 600;
-          color: var(--text-muted);
-        }
-        .session-duration {
-          font-size: 14px;
-          font-weight: 700;
-        }
-        .session-area {
-          font-size: 11px;
-          font-weight: 600;
-          text-transform: uppercase;
-          letter-spacing: 0.05em;
-        }
-        .session-intention {
-          font-size: 13px;
-          color: var(--text-secondary);
-          margin-top: 4px;
-        }
-        .session-quality {
-          margin-top: 6px;
-        }
-        .quality-badge {
-          display: inline-block;
-          padding: 2px 8px;
-          font-size: 10px;
-          font-weight: 700;
-          text-transform: uppercase;
-          letter-spacing: 0.05em;
-          border-radius: var(--radius-sm);
-          background: var(--accent);
-          color: var(--bg-primary);
-        }
-      `}</style>
     </div>
   );
 }

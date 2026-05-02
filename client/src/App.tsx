@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { Sidebar } from './components/Sidebar';
+import { CommandPalette } from './components/ui/CommandPalette';
+import { Topbar } from './components/ui/Topbar';
 import { AreaColorsProvider } from './hooks/useAreaColors';
 import { loadSettings } from './lib/settings';
 import { storageGetString, storageSetString } from './lib/storage';
@@ -17,9 +19,25 @@ export function App() {
     document.documentElement.dataset.reducedMotion = loadSettings().preferences.reducedMotion ? 'true' : 'false';
   }, []);
 
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(
     () => storageGetString('karma_yoga_sidebar_collapsed', 'false') === 'true'
   );
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
+        event.preventDefault();
+        setIsCommandPaletteOpen(current => !current);
+      }
+      if (event.key === 'Escape') {
+        setIsCommandPaletteOpen(false);
+      }
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
 
   const handleSidebarChange = (nextValue: boolean) => {
     setIsSidebarCollapsed(nextValue);
@@ -30,18 +48,22 @@ export function App() {
     <AreaColorsProvider>
       <div className={`app-layout ${isSidebarCollapsed ? 'is-sidebar-collapsed' : ''}`}>
         <Sidebar isCollapsed={isSidebarCollapsed} setIsCollapsed={handleSidebarChange} />
-        <main className="app-main">
-          <Routes>
-            <Route path="/" element={<DashboardPage />} />
-            <Route path="/habits" element={<HabitsPage />} />
-            <Route path="/pomodoro" element={<PomodoroPage />} />
-            <Route path="/health" element={<HealthPage />} />
-            <Route path="/wheel" element={<WheelPage />} />
-            <Route path="/analytics" element={<AnalyticsPage />} />
-            <Route path="/settings" element={<SettingsPage />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </main>
+        <div className="workspace-shell">
+          <Topbar onOpenCommandPalette={() => setIsCommandPaletteOpen(true)} />
+          <main className="app-main">
+            <Routes>
+              <Route path="/" element={<DashboardPage />} />
+              <Route path="/habits" element={<HabitsPage />} />
+              <Route path="/pomodoro" element={<PomodoroPage />} />
+              <Route path="/health" element={<HealthPage />} />
+              <Route path="/wheel" element={<WheelPage />} />
+              <Route path="/analytics" element={<AnalyticsPage />} />
+              <Route path="/settings" element={<SettingsPage />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </main>
+        </div>
+        <CommandPalette open={isCommandPaletteOpen} onClose={() => setIsCommandPaletteOpen(false)} />
       </div>
     </AreaColorsProvider>
   );

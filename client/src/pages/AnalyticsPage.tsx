@@ -8,6 +8,9 @@ import { HabitAreaAnalytics } from '../components/analytics/HabitAreaAnalytics';
 import { HealthCorrelations } from '../components/analytics/HealthCorrelations';
 import { WheelAnalytics } from '../components/analytics/WheelAnalytics';
 import { WeeklyReport } from '../components/analytics/WeeklyReport';
+import { PageHeader } from '../components/ui/PageHeader';
+import { SegmentedControl } from '../components/ui/SegmentedControl';
+import { StatusBanner } from '../components/ui/StatusBanner';
 import { useAreaColors } from '../hooks/useAreaColors';
 import type { WheelAxisId } from '../types';
 
@@ -74,29 +77,25 @@ export function AnalyticsPage() {
 
   return (
     <div className="page-shell">
-      <div className="page-header">
-        <h1 className="page-title">Analytics</h1>
-        <p className="page-subtitle">Your data powerhouse — see what&apos;s working and what needs attention.</p>
-      </div>
+      <PageHeader
+        title="Analytics"
+        subtitle="Your data powerhouse - see what's working and what needs attention."
+      />
 
       {error && (
-        <div className="status-banner">
-          <span>{error}</span>
-          <button className="status-action" onClick={() => void refresh()}>Retry</button>
-        </div>
+        <StatusBanner
+          tone="danger"
+          message={error}
+          actions={<button className="status-action" onClick={() => void refresh()}>Retry</button>}
+        />
       )}
 
-      <div className="analytics-tabs">
-        {TABS.map(tab => (
-          <button
-            key={tab.id}
-            className={`analytics-tab ${activeTab === tab.id ? 'active' : ''}`}
-            onClick={() => setActiveTab(tab.id)}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
+      <SegmentedControl
+        className="analytics-tabs"
+        options={TABS.map(tab => ({ value: tab.id, label: tab.label }))}
+        value={activeTab}
+        onChange={setActiveTab}
+      />
 
       <div className="analytics-content">
         {activeTab === 'overview' && (
@@ -137,7 +136,7 @@ export function AnalyticsPage() {
             </div>
 
             <div className="analytics-section">
-              <h3 className="analytics-section-title">Sleep × Focus Correlation</h3>
+              <h3 className="analytics-section-title">Sleep x Focus Correlation</h3>
               <SleepFocusCorrelation
                 data={sleepFocusData}
                 regression={sleepFocusRegression}
@@ -181,7 +180,7 @@ export function AnalyticsPage() {
               ) : (
                 <div className="analytics-empty">
                   <p>Log daily health check-ins to see correlations.</p>
-                  <a href="/health" className="btn btn-ghost">Go to Health →</a>
+                  <a href="/health" className="btn btn-ghost">Go to Health {'->'}</a>
                 </div>
               )}
             </div>
@@ -206,7 +205,7 @@ function FocusSessionsList({ sessions }: { sessions: any[] }) {
     return (
       <div className="analytics-empty">
         <p>No focus sessions yet. Start a pomodoro session.</p>
-        <a href="/pomodoro" className="btn btn-ghost">Go to Pomodoro →</a>
+        <a href="/pomodoro" className="btn btn-ghost">Go to Pomodoro {'->'}</a>
       </div>
     );
   }
@@ -260,7 +259,7 @@ function HealthMetricsPreview({ checkins }: { checkins: any[] }) {
     return (
       <div className="analytics-empty">
         <p>Log health check-ins to see correlations.</p>
-        <a href="/health" className="btn btn-ghost">Go to Health →</a>
+        <a href="/health" className="btn btn-ghost">Go to Health {'->'}</a>
       </div>
     );
   }

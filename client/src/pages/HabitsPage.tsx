@@ -5,6 +5,8 @@ import { HabitCheckin } from '../components/HabitCheckin';
 import { Heatmap } from '../components/Heatmap';
 import { CustomDropdown } from '../components/CustomDropdown';
 import { StreakLeaderboard } from '../components/StreakLeaderboard';
+import { PageHeader } from '../components/ui/PageHeader';
+import { StatusBanner } from '../components/ui/StatusBanner';
 import { toDateStr, addDays } from '../lib/dateUtils';
 
 const DAY_LABELS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
@@ -157,23 +159,24 @@ export function HabitsPage() {
   if (loading) {
     return (
       <div className="page-shell">
-        <div className="empty-state"><span className="empty-icon" style={{ animation: 'pulse 1.5s infinite' }}>⏳</span></div>
+        <div className="empty-state"><span className="empty-icon" style={{ animation: 'pulse 1.5s infinite' }}>...</span></div>
       </div>
     );
   }
 
   return (
     <div className="page-shell">
-      <div className="page-header">
-        <h1 className="page-title">Habits & Areas</h1>
-        <p className="page-subtitle">Track your daily habits across your customizable areas of life</p>
-      </div>
+      <PageHeader
+        title="Habits & Areas"
+        subtitle="Track your daily habits across your customizable areas of life."
+      />
 
       {error && (
-        <div className="status-banner">
-          <span>{error}</span>
-          <button className="status-action" onClick={() => void refresh()}>Retry</button>
-        </div>
+        <StatusBanner
+          tone="danger"
+          message={error}
+          actions={<button className="status-action" onClick={() => void refresh()}>Retry</button>}
+        />
       )}
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 'var(--gap-lg)' }}>
@@ -208,7 +211,7 @@ export function HabitsPage() {
               onClick={() => setShowDaySelector(!showDaySelector)}
               style={{ fontSize: 12, padding: '4px 8px' }}
             >
-              {showDaySelector ? '▼' : '▶'} Schedule: {targetDays.length}/7 days
+              {showDaySelector ? 'v' : '>'} Schedule: {targetDays.length}/7 days
             </button>
             {showDaySelector && (
               <div className="day-selector">
@@ -313,7 +316,7 @@ export function HabitsPage() {
 
       {areas.length === 0 ? (
         <div className="empty-state" style={{ marginTop: 32 }}>
-          <span className="empty-icon">🎯</span>
+          <span className="empty-icon">o</span>
           <span className="empty-text">No areas defined. Add your first area!</span>
         </div>
       ) : (
@@ -408,7 +411,7 @@ export function HabitsPage() {
                     className={`toggle-btn ${viewMode === h.id ? 'active' : ''}`}
                     onClick={() => setViewMode(h.id)}
                   >
-                    {h.name.length > 12 ? h.name.slice(0, 10) + '…' : h.name}
+                    {h.name.length > 12 ? h.name.slice(0, 10) + '...' : h.name}
                   </button>
                 ))}
               </div>

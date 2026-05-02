@@ -9,6 +9,9 @@ import { useAreaColors } from '../hooks/useAreaColors';
 import { getRecommendedDuration } from '../lib/analytics';
 import { loadSettings } from '../lib/settings';
 import { PomodoroShimmer } from '../components/Shimmer';
+import { PageHeader } from '../components/ui/PageHeader';
+import { SegmentedControl } from '../components/ui/SegmentedControl';
+import { StatusBanner } from '../components/ui/StatusBanner';
 
 const recommendationReasons: Record<25 | 45 | 90, string> = {
   25: 'Recent rated sessions point to shorter blocks for stronger consistency.',
@@ -64,15 +67,13 @@ export function PomodoroPage() {
 
   return (
     <div className="page-shell">
-      <div className="page-header animate-slide">
-        <h1 className="page-title">Pomodoro</h1>
-        <p className="page-subtitle">Deep focus sessions with structured breaks and adaptive coaching.</p>
-      </div>
+      <PageHeader
+        title="Pomodoro"
+        subtitle="Deep focus sessions with structured breaks and adaptive coaching."
+      />
 
       {error && (
-        <div className="status-banner">
-          <span>{error}</span>
-        </div>
+        <StatusBanner tone="danger" message={error} />
       )}
 
       {shouldShowRecommendation && recommendation && (
@@ -102,17 +103,12 @@ export function PomodoroPage() {
 
       <div className="pomodoro-grid">
         <div className="pomodoro-main-area animate-in">
-          <div className="preset-buttons">
-            {presets.map(presetOption => (
-              <button
-                key={presetOption}
-                className={`preset-btn ${presetKey === presetOption ? 'active' : ''}`}
-                onClick={() => selectPreset(presetOption)}
-              >
-                {presetOption}m
-              </button>
-            ))}
-          </div>
+          <SegmentedControl
+            className="preset-buttons"
+            options={presets.map(presetOption => ({ value: presetOption, label: `${presetOption}m` }))}
+            value={presetKey}
+            onChange={selectPreset}
+          />
 
           {(phase === 'idle' || phase === 'rating') && (
             <div className="intention-input-wrapper">
@@ -187,7 +183,7 @@ export function PomodoroPage() {
           </div>
 
           <div className="pomodoro-break-summary">
-            {presetConfig.shortBreak} minute short breaks · {presetConfig.longBreak} minute long breaks · long break every {presetConfig.cyclesBeforeLong} cycles
+            {presetConfig.shortBreak} minute short breaks - {presetConfig.longBreak} minute long breaks - long break every {presetConfig.cyclesBeforeLong} cycles
           </div>
         </div>
 

@@ -9,6 +9,8 @@ import { FocusAreaRing } from '../components/dashboard/FocusAreaRing';
 import { WeeklyReport } from '../components/analytics/WeeklyReport';
 import { TargetsPanel } from '../components/dashboard/TargetsPanel';
 import { DashboardShimmer } from '../components/Shimmer';
+import { PageHeader } from '../components/ui/PageHeader';
+import { StatusBanner } from '../components/ui/StatusBanner';
 
 export function DashboardPage() {
   const {
@@ -38,22 +40,21 @@ export function DashboardPage() {
 
   return (
     <div className="page-shell">
-      <div className="page-header">
-        <h1 className="page-title">Dashboard</h1>
-        <p className="page-subtitle">Daily command center built for a fast scan and an even faster loop.</p>
-      </div>
+      <PageHeader
+        title="Dashboard"
+        subtitle="Daily command center built for a fast scan and an even faster loop."
+      />
 
       {error && (
-        <div className="status-banner">
-          <span>{error}</span>
-          <button className="status-action" onClick={() => void refresh()}>Retry</button>
-        </div>
+        <StatusBanner
+          tone="danger"
+          message={error}
+          actions={<button className="status-action" onClick={() => void refresh()}>Retry</button>}
+        />
       )}
 
       {focusError && !error && (
-        <div className="status-banner status-banner-subtle">
-          <span>{focusError}</span>
-        </div>
+        <StatusBanner tone="subtle" message={focusError} />
       )}
 
       <div className="stat-row">

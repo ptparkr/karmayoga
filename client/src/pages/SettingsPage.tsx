@@ -1,5 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useSettings } from '../hooks/useSettings';
+import { PageHeader } from '../components/ui/PageHeader';
+import { SegmentedControl } from '../components/ui/SegmentedControl';
+import { StatusBanner } from '../components/ui/StatusBanner';
 
 type NumericFieldKey =
   | 'heightCm'
@@ -70,7 +73,7 @@ export function SettingsPage() {
   }, [settings.preferences.reducedMotion]);
 
   const saveLabel = useMemo(() => {
-    if (status === 'saving') return 'Saving…';
+    if (status === 'saving') return 'Saving...';
     if (status === 'saved') return 'Saved';
     if (status === 'error') return 'Save Failed';
     if (status === 'dirty') return 'Save Now';
@@ -78,7 +81,7 @@ export function SettingsPage() {
   }, [status]);
 
   const statusLabel = useMemo(() => {
-    if (status === 'saving') return 'Saving your preferences…';
+    if (status === 'saving') return 'Saving your preferences...';
     if (status === 'saved') return `Saved ${formatLastSaved(lastSavedAt)}`;
     if (status === 'error') return error || 'Failed to save settings.';
     if (status === 'dirty') return 'Changes are queued for auto-save.';
@@ -163,22 +166,25 @@ export function SettingsPage() {
 
   return (
     <div className="page-shell">
-      <div className="page-header">
-        <h1 className="page-title">Settings</h1>
-        <p className="page-subtitle">Personal profile, measurements, focus defaults, and local app behavior.</p>
-      </div>
+      <PageHeader
+        title="Settings"
+        subtitle="Personal profile, measurements, focus defaults, and local app behavior."
+      />
 
-      <div className={`status-banner ${status === 'error' ? '' : 'status-banner-subtle'}`}>
-        <span>{statusLabel}</span>
-        <div className="settings-status-actions">
-          <button className="status-action" type="button" onClick={resetToDefaults}>
-            Reset
-          </button>
-          <button className="status-action" type="button" onClick={saveNow} disabled={status === 'saving'}>
-            {saveLabel}
-          </button>
-        </div>
-      </div>
+      <StatusBanner
+        tone={status === 'error' ? 'danger' : 'subtle'}
+        message={statusLabel}
+        actions={(
+          <div className="settings-status-actions">
+            <button className="status-action" type="button" onClick={resetToDefaults}>
+              Reset
+            </button>
+            <button className="status-action" type="button" onClick={saveNow} disabled={status === 'saving'}>
+              {saveLabel}
+            </button>
+          </div>
+        )}
+      />
 
       <div className="settings-grid">
         <section className="card settings-card">
@@ -223,23 +229,20 @@ export function SettingsPage() {
 
           <div className="settings-field">
             <span className="settings-label">Biological Sex</span>
-            <div className="preset-buttons settings-pill-row">
-              {(['male', 'female', 'other'] as const).map(option => (
-                <button
-                  key={option}
-                  type="button"
-                  className={`preset-btn ${settings.profile.sex === option ? 'active' : ''}`}
-                  onClick={() => {
-                    markDirty(current => ({
-                      ...current,
-                      profile: { ...current.profile, sex: option },
-                    }));
-                  }}
-                >
-                  {option.charAt(0).toUpperCase() + option.slice(1)}
-                </button>
-              ))}
-            </div>
+            <SegmentedControl
+              className="settings-pill-row"
+              options={(['male', 'female', 'other'] as const).map(option => ({
+                value: option,
+                label: option.charAt(0).toUpperCase() + option.slice(1),
+              }))}
+              value={settings.profile.sex}
+              onChange={option => {
+                markDirty(current => ({
+                  ...current,
+                  profile: { ...current.profile, sex: option },
+                }));
+              }}
+            />
             <span className="settings-helper">Optional context for future health and performance analytics.</span>
           </div>
         </section>
@@ -271,23 +274,17 @@ export function SettingsPage() {
           <div className="card-title">Pomodoro Defaults</div>
           <div className="settings-field">
             <span className="settings-label">Default Focus Duration</span>
-            <div className="preset-buttons settings-pill-row">
-              {[25, 45, 90].map(minutes => (
-                <button
-                  key={minutes}
-                  type="button"
-                  className={`preset-btn ${settings.pomodoro.defaultPomoDuration === minutes ? 'active' : ''}`}
-                  onClick={() => {
-                    markDirty(current => ({
-                      ...current,
-                      pomodoro: { ...current.pomodoro, defaultPomoDuration: minutes as 25 | 45 | 90 },
-                    }));
-                  }}
-                >
-                  {minutes}m
-                </button>
-              ))}
-            </div>
+            <SegmentedControl
+              className="settings-pill-row"
+              options={[25, 45, 90].map(minutes => ({ value: minutes as 25 | 45 | 90, label: `${minutes}m` }))}
+              value={settings.pomodoro.defaultPomoDuration}
+              onChange={minutes => {
+                markDirty(current => ({
+                  ...current,
+                  pomodoro: { ...current.pomodoro, defaultPomoDuration: minutes },
+                }));
+              }}
+            />
             <span className="settings-helper">This becomes the starting preset whenever the Pomodoro screen opens.</span>
           </div>
 

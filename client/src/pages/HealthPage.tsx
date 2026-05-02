@@ -1,11 +1,17 @@
 import { useState } from 'react';
+import { PageHeader } from '../components/ui/PageHeader';
 import { useHealth } from '../hooks/useHealth';
 import type { BiologicalMarker } from '../types';
 
 export function HealthPage() {
-  const { todayStatus, longevity, trends, markers, loading, submitCheckin, addMarker, refresh } = useHealth();
+  const { todayStatus, longevity, trends, markers, loading, submitCheckin, addMarker } = useHealth();
 
-  const today = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  const today = new Date().toLocaleDateString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
 
   if (loading) {
     return (
@@ -17,26 +23,23 @@ export function HealthPage() {
 
   return (
     <div className="page-shell">
-      <div className="page-header">
-        <h1 className="page-title">Health</h1>
-        <p className="page-subtitle">{today}</p>
-      </div>
+      <PageHeader title="Health" subtitle={today} />
 
       <div className="health-grid">
         <div className="health-card">
           <div className="card-title">Morning Check-in</div>
           {todayStatus.hasCheckedIn ? (
             <div className="checkin-summary">
-              <div className="checkin-done">✓ Checked in today</div>
+              <div className="checkin-done">Done - Checked in today</div>
               <div className="checkin-quick-stats">
                 {todayStatus.checkin?.sleepHours && (
-                  <span>💤 {todayStatus.checkin.sleepHours}h</span>
+                  <span>Sleep {todayStatus.checkin.sleepHours}h</span>
                 )}
                 {todayStatus.checkin?.energyLevel && (
-                  <span>⚡ {todayStatus.checkin.energyLevel}/5</span>
+                  <span>Energy {todayStatus.checkin.energyLevel}/5</span>
                 )}
                 {todayStatus.checkin?.moodScore && (
-                  <span>😊 {todayStatus.checkin.moodScore}/5</span>
+                  <span>Mood {todayStatus.checkin.moodScore}/5</span>
                 )}
               </div>
             </div>
@@ -55,7 +58,7 @@ export function HealthPage() {
                   <span className="value">{longevity.biologicalAge} yrs</span>
                 </div>
                 <div className={`longevity-delta ${longevity.ageDelta < 0 ? 'positive' : 'negative'}`}>
-                  {longevity.ageDelta < 0 ? '↓' : '↑'} {Math.abs(longevity.ageDelta)} years {longevity.ageDelta < 0 ? 'younger' : 'older'}
+                  {longevity.ageDelta < 0 ? 'Down' : 'Up'} {Math.abs(longevity.ageDelta)} years {longevity.ageDelta < 0 ? 'younger' : 'older'}
                 </div>
               </div>
               <div className="longevity-score">
@@ -100,7 +103,7 @@ export function HealthPage() {
                 <span className="marker-date">{marker.date}</span>
                 {marker.weightKg && <span>{marker.weightKg}kg</span>}
                 {marker.bodyFatPercent && <span>{marker.bodyFatPercent}%</span>}
-                {marker.vo2MaxEstimate && <span>VO₂ {marker.vo2MaxEstimate}</span>}
+                {marker.vo2MaxEstimate && <span>VO2 {marker.vo2MaxEstimate}</span>}
               </div>
             ))}
           </div>
@@ -113,18 +116,18 @@ export function HealthPage() {
 function CheckinForm({ onSubmit }: { onSubmit: (data: any) => Promise<any> }) {
   const [formData, setFormData] = useState({
     sleepHours: 7,
-    sleepQuality: 3 as 1|2|3|4|5,
+    sleepQuality: 3 as 1 | 2 | 3 | 4 | 5,
     hrv: null as number | null,
     restingHR: null as number | null,
     steps: null as number | null,
-    energyLevel: 3 as 1|2|3|4|5,
-    moodScore: 3 as 1|2|3|4|5,
+    energyLevel: 3 as 1 | 2 | 3 | 4 | 5,
+    moodScore: 3 as 1 | 2 | 3 | 4 | 5,
     notes: '',
   });
   const [submitting, setSubmitting] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
     setSubmitting(true);
     try {
       await onSubmit(formData);
@@ -138,54 +141,91 @@ function CheckinForm({ onSubmit }: { onSubmit: (data: any) => Promise<any> }) {
       <div className="checkin-grid">
         <div className="checkin-field">
           <label>Sleep Hours</label>
-          <input type="number" step="0.25" min="0" max="24" value={formData.sleepHours} 
-            onChange={e => setFormData({...formData, sleepHours: parseFloat(e.target.value)})} />
+          <input
+            type="number"
+            step="0.25"
+            min="0"
+            max="24"
+            value={formData.sleepHours}
+            onChange={event => setFormData({ ...formData, sleepHours: parseFloat(event.target.value) })}
+          />
         </div>
         <div className="checkin-field">
           <label>Sleep Quality</label>
           <div className="star-rating">
-            {[1,2,3,4,5].map(s => (
-              <button type="button" key={s} className={`star ${s <= formData.sleepQuality ? 'active' : ''}`}
-                onClick={() => setFormData({...formData, sleepQuality: s as 1|2|3|4|5})}>★</button>
+            {[1, 2, 3, 4, 5].map(star => (
+              <button
+                type="button"
+                key={star}
+                className={`star ${star <= formData.sleepQuality ? 'active' : ''}`}
+                onClick={() => setFormData({ ...formData, sleepQuality: star as 1 | 2 | 3 | 4 | 5 })}
+              >
+                *
+              </button>
             ))}
           </div>
         </div>
         <div className="checkin-field">
           <label>HRV</label>
-          <input type="number" placeholder="ms" value={formData.hrv ?? ''} 
-            onChange={e => setFormData({...formData, hrv: e.target.value ? parseInt(e.target.value) : null})} />
+          <input
+            type="number"
+            placeholder="ms"
+            value={formData.hrv ?? ''}
+            onChange={event => setFormData({ ...formData, hrv: event.target.value ? parseInt(event.target.value, 10) : null })}
+          />
         </div>
         <div className="checkin-field">
           <label>Resting HR</label>
-          <input type="number" placeholder="bpm" value={formData.restingHR ?? ''} 
-            onChange={e => setFormData({...formData, restingHR: e.target.value ? parseInt(e.target.value) : null})} />
+          <input
+            type="number"
+            placeholder="bpm"
+            value={formData.restingHR ?? ''}
+            onChange={event => setFormData({ ...formData, restingHR: event.target.value ? parseInt(event.target.value, 10) : null })}
+          />
         </div>
         <div className="checkin-field">
           <label>Steps</label>
-          <input type="number" placeholder="count" value={formData.steps ?? ''} 
-            onChange={e => setFormData({...formData, steps: e.target.value ? parseInt(e.target.value) : null})} />
+          <input
+            type="number"
+            placeholder="count"
+            value={formData.steps ?? ''}
+            onChange={event => setFormData({ ...formData, steps: event.target.value ? parseInt(event.target.value, 10) : null })}
+          />
         </div>
         <div className="checkin-field">
           <label>Energy</label>
           <div className="slider-field">
-            <input type="range" min="1" max="5" value={formData.energyLevel} 
-              onChange={e => setFormData({...formData, energyLevel: parseInt(e.target.value) as 1|2|3|4|5})} />
+            <input
+              type="range"
+              min="1"
+              max="5"
+              value={formData.energyLevel}
+              onChange={event => setFormData({ ...formData, energyLevel: parseInt(event.target.value, 10) as 1 | 2 | 3 | 4 | 5 })}
+            />
             <span>{formData.energyLevel}/5</span>
           </div>
         </div>
         <div className="checkin-field">
           <label>Mood</label>
           <div className="slider-field">
-            <input type="range" min="1" max="5" value={formData.moodScore} 
-              onChange={e => setFormData({...formData, moodScore: parseInt(e.target.value) as 1|2|3|4|5})} />
+            <input
+              type="range"
+              min="1"
+              max="5"
+              value={formData.moodScore}
+              onChange={event => setFormData({ ...formData, moodScore: parseInt(event.target.value, 10) as 1 | 2 | 3 | 4 | 5 })}
+            />
             <span>{formData.moodScore}/5</span>
           </div>
         </div>
       </div>
       <div className="checkin-field full-width">
         <label>Notes</label>
-        <textarea placeholder="How are you feeling today?" value={formData.notes}
-          onChange={e => setFormData({...formData, notes: e.target.value})} />
+        <textarea
+          placeholder="How are you feeling today?"
+          value={formData.notes}
+          onChange={event => setFormData({ ...formData, notes: event.target.value })}
+        />
       </div>
       <button type="submit" className="btn btn-primary" disabled={submitting}>
         {submitting ? 'Saving...' : 'Log Check-in'}
@@ -195,20 +235,19 @@ function CheckinForm({ onSubmit }: { onSubmit: (data: any) => Promise<any> }) {
 }
 
 function TrendCard({ label, data, unit }: { label: string; data: { date: string; value: number }[]; unit: string }) {
-  const max = Math.max(...data.map(d => d.value), 1);
-  const min = Math.min(...data.map(d => d.value), 0);
+  const max = Math.max(...data.map(item => item.value), 1);
+  const min = Math.min(...data.map(item => item.value), 0);
   const range = max - min || 1;
 
   return (
     <div className="trend-card">
       <div className="trend-label">{label}</div>
       <div className="trend-sparkline">
-        {data.map((d, i) => (
-          <div key={i} className="spark-bar" style={{ height: `${((d.value - min) / range) * 100}%` }} />
+        {data.map((point, index) => (
+          <div key={index} className="spark-bar" style={{ height: `${((point.value - min) / range) * 100}%` }} />
         ))}
       </div>
-      <div className="trend-current">{data.length > 0 ? `${data[data.length - 1].value}${unit}` : '-'}
-      </div>
+      <div className="trend-current">{data.length > 0 ? `${data[data.length - 1].value}${unit}` : '-'}</div>
     </div>
   );
 }
@@ -224,8 +263,8 @@ function MarkerForm({ onSubmit }: { onSubmit: (data: any) => Promise<any> }) {
   });
   const [submitting, setSubmitting] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
     setSubmitting(true);
     try {
       await onSubmit(formData);
@@ -238,18 +277,42 @@ function MarkerForm({ onSubmit }: { onSubmit: (data: any) => Promise<any> }) {
   return (
     <form onSubmit={handleSubmit} className="marker-form">
       <div className="marker-grid">
-        <input type="number" placeholder="Weight (kg)" value={formData.weightKg ?? ''}
-          onChange={e => setFormData({...formData, weightKg: e.target.value ? parseFloat(e.target.value) : null})} />
-        <input type="number" placeholder="Body Fat %" value={formData.bodyFatPercent ?? ''}
-          onChange={e => setFormData({...formData, bodyFatPercent: e.target.value ? parseFloat(e.target.value) : null})} />
-        <input type="number" placeholder="VO₂ Max" value={formData.vo2MaxEstimate ?? ''}
-          onChange={e => setFormData({...formData, vo2MaxEstimate: e.target.value ? parseFloat(e.target.value) : null})} />
-        <input type="number" placeholder="Grip (kg)" value={formData.gripStrengthKg ?? ''}
-          onChange={e => setFormData({...formData, gripStrengthKg: e.target.value ? parseFloat(e.target.value) : null})} />
-        <input type="number" placeholder="Waist (cm)" value={formData.waistCm ?? ''}
-          onChange={e => setFormData({...formData, waistCm: e.target.value ? parseFloat(e.target.value) : null})} />
-        <input type="number" placeholder="Avg Resting HR" value={formData.restingHRAvg ?? ''}
-          onChange={e => setFormData({...formData, restingHRAvg: e.target.value ? parseInt(e.target.value) : null})} />
+        <input
+          type="number"
+          placeholder="Weight (kg)"
+          value={formData.weightKg ?? ''}
+          onChange={event => setFormData({ ...formData, weightKg: event.target.value ? parseFloat(event.target.value) : null })}
+        />
+        <input
+          type="number"
+          placeholder="Body Fat %"
+          value={formData.bodyFatPercent ?? ''}
+          onChange={event => setFormData({ ...formData, bodyFatPercent: event.target.value ? parseFloat(event.target.value) : null })}
+        />
+        <input
+          type="number"
+          placeholder="VO2 Max"
+          value={formData.vo2MaxEstimate ?? ''}
+          onChange={event => setFormData({ ...formData, vo2MaxEstimate: event.target.value ? parseFloat(event.target.value) : null })}
+        />
+        <input
+          type="number"
+          placeholder="Grip (kg)"
+          value={formData.gripStrengthKg ?? ''}
+          onChange={event => setFormData({ ...formData, gripStrengthKg: event.target.value ? parseFloat(event.target.value) : null })}
+        />
+        <input
+          type="number"
+          placeholder="Waist (cm)"
+          value={formData.waistCm ?? ''}
+          onChange={event => setFormData({ ...formData, waistCm: event.target.value ? parseFloat(event.target.value) : null })}
+        />
+        <input
+          type="number"
+          placeholder="Avg Resting HR"
+          value={formData.restingHRAvg ?? ''}
+          onChange={event => setFormData({ ...formData, restingHRAvg: event.target.value ? parseInt(event.target.value, 10) : null })}
+        />
       </div>
       <button type="submit" className="btn btn-ghost" disabled={submitting}>
         {submitting ? 'Saving...' : 'Log Monthly Marker'}

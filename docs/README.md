@@ -48,3 +48,4 @@ npm run build:all
 - build client + server + rust core
 - serve the static client from `client/dist`
 - route `/api/*` requests to the Node function in `api/[...all].ts`
+    

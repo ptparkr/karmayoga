@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { WheelOfLife } from '../components/WheelOfLife';
 import { useWheel } from '../hooks/useWheel';
 import { useAreaColors } from '../hooks/useAreaColors';
+import { PageHeader } from '../components/ui/PageHeader';
+import { StatusBanner } from '../components/ui/StatusBanner';
 
 export function WheelPage() {
   const { axes, snapshots, loading, error, updateAxis, takeSnapshot, getBalanceScore, getGroupScores, refresh } = useWheel();
@@ -35,12 +37,11 @@ export function WheelPage() {
   if (error) {
     return (
       <div className="page-shell wheel-page">
-        <div className="wheel-error">
-          <p>Error: {error}</p>
-          <button onClick={() => refresh()} className="btn btn-primary">
-            Retry
-          </button>
-        </div>
+        <StatusBanner
+          tone="danger"
+          message={`Error: ${error}`}
+          actions={<button onClick={() => refresh()} className="status-action">Retry</button>}
+        />
       </div>
     );
   }
@@ -49,14 +50,10 @@ export function WheelPage() {
 
   return (
     <div className="page-shell wheel-page">
-      <header className="page-header">
-        <div className="wheel-header-top">
-          <div>
-            <h1 className="page-title">Wheel of Life</h1>
-            <p className="page-subtitle">
-              Balance your life across 10 key dimensions
-            </p>
-          </div>
+      <PageHeader
+        title="Wheel of Life"
+        subtitle="Balance your life across 10 key dimensions."
+        actions={(
           <div className="wheel-header-actions">
             <button
               onClick={() => setEditable(!editable)}
@@ -68,26 +65,26 @@ export function WheelPage() {
               Take Snapshot
             </button>
           </div>
-        </div>
+        )}
+      />
 
-        <div className="wheel-stats">
-          <div className="wheel-stat">
-            <span className="wheel-stat-label">Balance Score</span>
-            <span className="wheel-stat-value">{balanceScore}</span>
-          </div>
-          {Object.entries(groupScores).map(([group, score]) => (
-            <div key={group} className="wheel-stat">
-              <span className="wheel-stat-label">{group}</span>
-              <span 
-                className="wheel-stat-value"
-                style={{ color: getColor(group === 'relationships' ? 'romance' : group === 'work' ? 'growth' : group === 'joy' ? 'joy' : 'body') }}
-              >
-                {score}
-              </span>
-            </div>
-          ))}
+      <div className="wheel-stats">
+        <div className="wheel-stat">
+          <span className="wheel-stat-label">Balance Score</span>
+          <span className="wheel-stat-value">{balanceScore}</span>
         </div>
-      </header>
+        {Object.entries(groupScores).map(([group, score]) => (
+          <div key={group} className="wheel-stat">
+            <span className="wheel-stat-label">{group}</span>
+            <span
+              className="wheel-stat-value"
+              style={{ color: getColor(group === 'relationships' ? 'romance' : group === 'work' ? 'growth' : group === 'joy' ? 'joy' : 'body') }}
+            >
+              {score}
+            </span>
+          </div>
+        ))}
+      </div>
 
       <div className={`wheel-layout ${isExpanded ? 'expanded' : ''}`}>
         <section className="wheel-main">
@@ -103,7 +100,7 @@ export function WheelPage() {
             onClick={() => setIsExpanded(!isExpanded)}
             title={isExpanded ? 'Collapse' : 'Expand'}
           >
-            {isExpanded ? '−' : '+'}
+            {isExpanded ? '-' : '+'}
           </button>
         </section>
 
