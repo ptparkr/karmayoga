@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
+import { useAuth } from '../../lib/auth';
 import { ROUTE_TITLE_MAP } from '../../lib/navigation';
 
 interface TopbarProps {
@@ -8,6 +9,7 @@ interface TopbarProps {
 
 export function Topbar({ onOpenCommandPalette }: TopbarProps) {
   const location = useLocation();
+  const { identity } = useAuth();
   const pageTitle = ROUTE_TITLE_MAP[location.pathname] ?? 'Karma Yoga';
 
   const dateLabel = useMemo(() => {
@@ -37,6 +39,10 @@ export function Topbar({ onOpenCommandPalette }: TopbarProps) {
           <span className="topbar-search-label">Search or jump</span>
           <kbd>Cmd/Ctrl K</kbd>
         </button>
+        <div className="topbar-user" title="Guest workspace">
+          <span className="topbar-user-indicator" />
+          <span>{identity?.username}</span>
+        </div>
         <div className="topbar-date">{dateLabel}</div>
       </div>
     </header>

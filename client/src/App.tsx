@@ -3,7 +3,9 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { Sidebar } from './components/Sidebar';
 import { CommandPalette } from './components/ui/CommandPalette';
 import { Topbar } from './components/ui/Topbar';
+import { GuestEntry } from './components/auth/GuestEntry';
 import { AreaColorsProvider } from './hooks/useAreaColors';
+import { useAuth } from './lib/auth';
 import { loadSettings } from './lib/settings';
 import { storageGetString, storageSetString } from './lib/storage';
 import { DashboardPage } from './pages/DashboardPage';
@@ -15,6 +17,8 @@ import { AnalyticsPage } from './pages/AnalyticsPage';
 import { SettingsPage } from './pages/SettingsPage';
 
 export function App() {
+  const { identity, isBooting } = useAuth();
+
   useEffect(() => {
     document.documentElement.dataset.reducedMotion = loadSettings().preferences.reducedMotion ? 'true' : 'false';
   }, []);
@@ -43,6 +47,19 @@ export function App() {
     setIsSidebarCollapsed(nextValue);
     storageSetString('karma_yoga_sidebar_collapsed', String(nextValue));
   };
+
+  if (isBooting) {
+    return (
+      <main className="app-boot-shell">
+        <div className="app-boot-mark" />
+        <span>Restoring your workspace</span>
+      </main>
+    );
+  }
+
+  if (!identity) {
+    return <GuestEntry />;
+  }
 
   return (
     <AreaColorsProvider>

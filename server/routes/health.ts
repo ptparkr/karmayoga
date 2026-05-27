@@ -1,4 +1,5 @@
 import { getDb, saveDb } from '../db';
+import { getOwnerId } from '../auth';
 
 interface LongevityInput {
   hrv: number | null;
@@ -68,12 +69,12 @@ export function calculateLongevity(
   };
 }
 
-export function getTodayCheckin() {
+export function getTodayCheckin(ownerId: string) {
   const db = getDb();
   const today = new Date().toISOString().slice(0, 10);
   
-  const stmt = db.prepare('SELECT * FROM health_checkins WHERE date = ?');
-  stmt.bind([today]);
+  const stmt = db.prepare('SELECT * FROM health_checkins WHERE owner_id = ? AND date = ?');
+  stmt.bind([ownerId, today]);
   
   if (stmt.step()) {
     const row = stmt.getAsObject() as any;
@@ -110,16 +111,17 @@ export function createOrUpdateCheckin(data: {
   energyLevel: number | null;
   moodScore: number | null;
   notes: string;
-}) {
+}, ownerId: string) {
   const db = getDb();
   const id = data.id || crypto.randomUUID();
   const date = data.date || new Date().toISOString().slice(0, 10);
   
   db.run(`
     INSERT OR REPLACE INTO health_checkins 
-    (id, date, hrv, sleep_hours, sleep_quality, resting_hr, steps, energy_level, mood_score, notes)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    (owner_id, id, date, hrv, sleep_hours, sleep_quality, resting_hr, steps, energy_level, mood_score, notes)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `, [
+    ownerId,
     id,
     date,
     data.hrv,
@@ -148,7 +150,7 @@ export function createOrUpdateCheckin(data: {
   };
 }
 
-export function getHealthTrends(metric: string, days: number = 30) {
+export function getHealthTrends(metric: string, days: number = 30, ownerId = 'guest_legacy') {
   const db = getDb();
   const endDate = new Date().toISOString().slice(0, 10);
   const startDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
@@ -157,10 +159,10 @@ export function getHealthTrends(metric: string, days: number = 30) {
   if (metric === 'all') {
     const stmt = db.prepare(`
       SELECT * FROM health_checkins 
-      WHERE date BETWEEN ? AND ?
+      WHERE owner_id = ? AND date BETWEEN ? AND ?
       ORDER BY date ASC
     `);
-    stmt.bind([startDate, endDate]);
+    stmt.bind([ownerId, startDate, endDate]);
     
     const results: any[] = [];
     while (stmt.step()) {
@@ -196,10 +198,10 @@ export function getHealthTrends(metric: string, days: number = 30) {
   const stmt = db.prepare(`
     SELECT date, ${col} as value 
     FROM health_checkins 
-    WHERE date BETWEEN ? AND ? AND ${col} IS NOT NULL
+    WHERE owner_id = ? AND date BETWEEN ? AND ? AND ${col} IS NOT NULL
     ORDER BY date ASC
   `);
-  stmt.bind([startDate, endDate]);
+  stmt.bind([ownerId, startDate, endDate]);
   
   const results: { date: string; value: number }[] = [];
   while (stmt.step()) {
@@ -211,7 +213,7 @@ export function getHealthTrends(metric: string, days: number = 30) {
   return results;
 }
 
-export function getLongevityScore(age: number = 25) {
+export function getLongevityScore(age: number = 25, ownerId = 'guest_legacy') {
   const db = getDb();
   const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
   
@@ -224,9 +226,9 @@ export function getLongevityScore(age: number = 25) {
       AVG(sleep_quality) as avg_quality,
       AVG(steps) as avg_steps
     FROM health_checkins
-    WHERE date >= ?
+    WHERE owner_id = ? AND date >= ?
   `);
-  stmt.bind([thirtyDaysAgo]);
+  stmt.bind([ownerId, thirtyDaysAgo]);
   
   let input: LongevityInput = {
     hrv: null,
@@ -253,6 +255,7 @@ export function getLongevityScore(age: number = 25) {
 
 // Biological markers
 export function createMarker(data: {
+  ownerId: string;
   id?: string;
   date?: string;
   vo2MaxEstimate: number | null;
@@ -268,9 +271,10 @@ export function createMarker(data: {
   
   db.run(`
     INSERT INTO bio_markers 
-    (id, date, vo2_max, grip_kg, waist_cm, weight_kg, body_fat, resting_hr_avg)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    (owner_id, id, date, vo2_max, grip_kg, waist_cm, weight_kg, body_fat, resting_hr_avg)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
   `, [
+    data.ownerId,
     id,
     date,
     data.vo2MaxEstimate,
@@ -295,9 +299,10 @@ export function createMarker(data: {
   };
 }
 
-export function getMarkers() {
+export function getMarkers(ownerId: string) {
   const db = getDb();
-  const stmt = db.prepare('SELECT * FROM bio_markers ORDER BY date DESC LIMIT 20');
+  const stmt = db.prepare('SELECT * FROM bio_markers WHERE owner_id = ? ORDER BY date DESC LIMIT 20');
+  stmt.bind([ownerId]);
   
   const results: any[] = [];
   while (stmt.step()) {
@@ -321,44 +326,44 @@ export function getMarkers() {
 import express from 'express';
 const router = express.Router();
 
-router.get('/today', (_req, res) => {
-  const result = getTodayCheckin();
+router.get('/today', (req, res) => {
+  const result = getTodayCheckin(getOwnerId(req));
   res.json(result);
 });
 
 router.post('/checkin', (req, res) => {
   const data = req.body;
-  const result = createOrUpdateCheckin(data);
+  const result = createOrUpdateCheckin(data, getOwnerId(req));
   res.json(result);
 });
 
 router.get('/trends/:metric', (req, res) => {
   const { metric } = req.params;
   const days = parseInt(req.query.days as string) || 30;
-  const result = getHealthTrends(metric, days);
+  const result = getHealthTrends(metric, days, getOwnerId(req));
   res.json(result);
 });
 
 router.get('/longevity', (req, res) => {
   const age = parseInt(req.query.age as string) || 25;
-  const result = getLongevityScore(age);
+  const result = getLongevityScore(age, getOwnerId(req));
   res.json(result);
 });
 
 router.post('/markers', (req, res) => {
   const data = req.body;
-  const result = createMarker(data);
+  const result = createMarker({ ...data, ownerId: getOwnerId(req) });
   res.json(result);
 });
 
-router.get('/markers', (_req, res) => {
-  const result = getMarkers();
+router.get('/markers', (req, res) => {
+  const result = getMarkers(getOwnerId(req));
   res.json(result);
 });
 
 router.get('/checkins', (req, res) => {
   const days = parseInt(req.query.days as string) || 30;
-  const result = getHealthTrends('all', days);
+  const result = getHealthTrends('all', days, getOwnerId(req));
   res.json(result);
 });
 
