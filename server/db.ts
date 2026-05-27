@@ -46,6 +46,31 @@ const DB_PATH = resolveDbPath();
 
 let db: Database;
 
+function addColumnIfMissing(table: string, definition: string): void {
+  try {
+    db.run(`ALTER TABLE ${table} ADD COLUMN ${definition}`);
+  } catch {
+    // Column likely already exists.
+  }
+}
+
+function ensureOwnerScopedTable(table: string, createSql: string, copySql: string): void {
+  const info = db.exec(`PRAGMA table_info(${table})`);
+  const columns = info[0]?.values.map(row => row[1]) ?? [];
+
+  if (columns.length === 0) {
+    db.run(createSql);
+    return;
+  }
+
+  if (columns.includes('owner_id')) return;
+
+  db.run(`ALTER TABLE ${table} RENAME TO ${table}_legacy`);
+  db.run(createSql);
+  db.run(copySql);
+  db.run(`DROP TABLE ${table}_legacy`);
+}
+
 export async function initDb(): Promise<Database> {
   const SQL = await (initSqlJs as any)({
     locateFile: resolveSqlJsLocateFile,
@@ -70,12 +95,8 @@ export async function initDb(): Promise<Database> {
     )
   `);
 
-  // Migration: add target_days if missing
-  try {
-    db.run('ALTER TABLE habits ADD COLUMN target_days TEXT');
-  } catch (e) {
-    // Column likely already exists
-  }
+  addColumnIfMissing('habits', "target_days TEXT NOT NULL DEFAULT '[0,1,2,3,4,5,6]'");
+  addColumnIfMissing('habits', "owner_id TEXT NOT NULL DEFAULT 'guest_legacy'");
 
   db.run(`
     CREATE TABLE IF NOT EXISTS checkins (
@@ -85,6 +106,7 @@ export async function initDb(): Promise<Database> {
       UNIQUE(habit_id, date)
     )
   `);
+  addColumnIfMissing('checkins', "owner_id TEXT NOT NULL DEFAULT 'guest_legacy'");
 
   db.run(`
     CREATE TABLE IF NOT EXISTS pomodoro_sessions (
@@ -99,28 +121,24 @@ export async function initDb(): Promise<Database> {
     )
   `);
 
-  // Migration: add intention and quality columns if missing
-  try {
-    db.run('ALTER TABLE pomodoro_sessions ADD COLUMN intention TEXT');
-  } catch (e) {
-    // Column likely already exists
-  }
-  try {
-    db.run('ALTER TABLE pomodoro_sessions ADD COLUMN quality INTEGER');
-  } catch (e) {
-    // Column likely already exists
-  }
+  addColumnIfMissing('pomodoro_sessions', 'intention TEXT');
+  addColumnIfMissing('pomodoro_sessions', 'quality INTEGER');
+  addColumnIfMissing('pomodoro_sessions', "owner_id TEXT NOT NULL DEFAULT 'guest_legacy'");
 
 
-  db.run(`
-    CREATE TABLE IF NOT EXISTS areas (
-      name  TEXT PRIMARY KEY,
-      color TEXT NOT NULL
-    )
-  `);
+  ensureOwnerScopedTable(
+    'areas',
+    `CREATE TABLE areas (
+      owner_id TEXT NOT NULL,
+      name  TEXT NOT NULL,
+      color TEXT NOT NULL,
+      PRIMARY KEY(owner_id, name)
+    )`,
+    "INSERT INTO areas (owner_id, name, color) SELECT 'guest_legacy', name, color FROM areas_legacy"
+  );
 
   // Seed default area colors if empty
-  const areaCount = db.prepare('SELECT COUNT(*) as c FROM areas');
+  const areaCount = db.prepare("SELECT COUNT(*) as c FROM areas WHERE owner_id = 'guest_legacy'");
   areaCount.step();
   const count = (areaCount.getAsObject() as any).c;
   areaCount.free();
@@ -134,16 +152,18 @@ export async function initDb(): Promise<Database> {
       ['finance', '#39d2c0'],
     ];
     for (const [name, color] of defaults) {
-      db.run('INSERT INTO areas (name, color) VALUES (?, ?)', [name, color]);
+      db.run("INSERT INTO areas (owner_id, name, color) VALUES ('guest_legacy', ?, ?)", [name, color]);
     }
     saveDb();
   }
 
   // Health tables
-  db.run(`
-    CREATE TABLE IF NOT EXISTS health_checkins (
-      id          TEXT PRIMARY KEY,
-      date        TEXT NOT NULL UNIQUE,
+  ensureOwnerScopedTable(
+    'health_checkins',
+    `CREATE TABLE health_checkins (
+      owner_id    TEXT NOT NULL,
+      id          TEXT NOT NULL,
+      date        TEXT NOT NULL,
       hrv         INTEGER,
       sleep_hours REAL,
       sleep_quality INTEGER,
@@ -151,9 +171,12 @@ export async function initDb(): Promise<Database> {
       steps       INTEGER,
       energy_level INTEGER,
       mood_score  INTEGER,
-      notes       TEXT DEFAULT ''
-    )
-  `);
+      notes       TEXT DEFAULT '',
+      PRIMARY KEY(owner_id, id),
+      UNIQUE(owner_id, date)
+    )`,
+    "INSERT INTO health_checkins (owner_id, id, date, hrv, sleep_hours, sleep_quality, resting_hr, steps, energy_level, mood_score, notes) SELECT 'guest_legacy', id, date, hrv, sleep_hours, sleep_quality, resting_hr, steps, energy_level, mood_score, notes FROM health_checkins_legacy"
+  );
 
   db.run(`
     CREATE TABLE IF NOT EXISTS bio_markers (
@@ -167,15 +190,20 @@ export async function initDb(): Promise<Database> {
       resting_hr_avg INTEGER
     )
   `);
+  addColumnIfMissing('bio_markers', "owner_id TEXT NOT NULL DEFAULT 'guest_legacy'");
 
   // Wheel of Life tables
-  db.run(`
-    CREATE TABLE IF NOT EXISTS wheel_axes (
-      id            TEXT PRIMARY KEY,
+  ensureOwnerScopedTable(
+    'wheel_axes',
+    `CREATE TABLE wheel_axes (
+      owner_id      TEXT NOT NULL,
+      id            TEXT NOT NULL,
       current_score INTEGER NOT NULL DEFAULT 5,
-      target_score  INTEGER NOT NULL DEFAULT 8
-    )
-  `);
+      target_score  INTEGER NOT NULL DEFAULT 8,
+      PRIMARY KEY(owner_id, id)
+    )`,
+    "INSERT INTO wheel_axes (owner_id, id, current_score, target_score) SELECT 'guest_legacy', id, current_score, target_score FROM wheel_axes_legacy"
+  );
 
   db.run(`
     CREATE TABLE IF NOT EXISTS wheel_snapshots (
@@ -184,9 +212,10 @@ export async function initDb(): Promise<Database> {
       scores TEXT NOT NULL
     )
   `);
+  addColumnIfMissing('wheel_snapshots', "owner_id TEXT NOT NULL DEFAULT 'guest_legacy'");
 
   // Seed default wheel axes if empty
-  const wheelCount = db.prepare('SELECT COUNT(*) as c FROM wheel_axes');
+  const wheelCount = db.prepare("SELECT COUNT(*) as c FROM wheel_axes WHERE owner_id = 'guest_legacy'");
   wheelCount.step();
   const wheelAxisCount = (wheelCount.getAsObject() as any).c;
   wheelCount.free();
@@ -197,7 +226,7 @@ export async function initDb(): Promise<Database> {
       'mission', 'romance', 'family', 'friends', 'joy',
     ];
     for (const axisId of defaultAxes) {
-      db.run('INSERT INTO wheel_axes (id, current_score, target_score) VALUES (?, 5, 8)', [axisId]);
+      db.run("INSERT INTO wheel_axes (owner_id, id, current_score, target_score) VALUES ('guest_legacy', ?, 5, 8)", [axisId]);
     }
     saveDb();
   }

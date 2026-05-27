@@ -1,4 +1,5 @@
 import { Router, Request, Response } from 'express';
+import { getOwnerId } from '../auth';
 import { getDb, saveDb } from '../db';
 
 const router = Router();
@@ -8,12 +9,29 @@ const DEFAULT_AXES = [
   'mission', 'romance', 'family', 'friends', 'joy',
 ] as const;
 
-// GET /api/wheel — get current axes + snapshots
-router.get('/', (_req: Request, res: Response) => {
+function ensureDefaultAxes(ownerId: string) {
   const db = getDb();
+  const countStmt = db.prepare('SELECT COUNT(*) as c FROM wheel_axes WHERE owner_id = ?');
+  countStmt.bind([ownerId]);
+  countStmt.step();
+  const count = (countStmt.getAsObject() as any).c;
+  countStmt.free();
 
-  // Load axes
-  const axesStmt = db.prepare('SELECT * FROM wheel_axes ORDER BY id');
+  if (count > 0) return;
+
+  for (const axisId of DEFAULT_AXES) {
+    db.run('INSERT INTO wheel_axes (owner_id, id, current_score, target_score) VALUES (?, ?, 5, 8)', [ownerId, axisId]);
+  }
+  saveDb();
+}
+
+router.get('/', (req: Request, res: Response) => {
+  const db = getDb();
+  const ownerId = getOwnerId(req);
+  ensureDefaultAxes(ownerId);
+
+  const axesStmt = db.prepare('SELECT * FROM wheel_axes WHERE owner_id = ? ORDER BY id');
+  axesStmt.bind([ownerId]);
   const axes: { id: string; currentScore: number; targetScore: number }[] = [];
   while (axesStmt.step()) {
     const row = axesStmt.getAsObject() as any;
@@ -25,10 +43,8 @@ router.get('/', (_req: Request, res: Response) => {
   }
   axesStmt.free();
 
-  // Load snapshots (last 12)
-  const snapStmt = db.prepare(
-    'SELECT * FROM wheel_snapshots ORDER BY date DESC LIMIT 12'
-  );
+  const snapStmt = db.prepare('SELECT * FROM wheel_snapshots WHERE owner_id = ? ORDER BY date DESC LIMIT 12');
+  snapStmt.bind([ownerId]);
   const snapshots: { id: string; date: string; scores: Record<string, number> }[] = [];
   while (snapStmt.step()) {
     const row = snapStmt.getAsObject() as any;
@@ -39,18 +55,15 @@ router.get('/', (_req: Request, res: Response) => {
         scores: JSON.parse(row.scores),
       });
     } catch {
-      // skip malformed rows
+      // Skip malformed rows.
     }
   }
   snapStmt.free();
 
-  // Reverse so oldest first
   snapshots.reverse();
-
   res.json({ axes, snapshots });
 });
 
-// PUT /api/wheel/axis/:id — update a single axis score
 router.put('/axis/:id', (req: Request, res: Response) => {
   const { id } = req.params;
   const { score, type } = req.body;
@@ -65,11 +78,12 @@ router.put('/axis/:id', (req: Request, res: Response) => {
   }
 
   const db = getDb();
+  const ownerId = getOwnerId(req);
+  ensureDefaultAxes(ownerId);
   const col = type === 'current' ? 'current_score' : 'target_score';
 
-  // Check if axis exists
-  const checkStmt = db.prepare('SELECT id FROM wheel_axes WHERE id = ?');
-  checkStmt.bind([id]);
+  const checkStmt = db.prepare('SELECT id FROM wheel_axes WHERE owner_id = ? AND id = ?');
+  checkStmt.bind([ownerId, id]);
   const exists = checkStmt.step();
   checkStmt.free();
 
@@ -78,12 +92,11 @@ router.put('/axis/:id', (req: Request, res: Response) => {
     return;
   }
 
-  db.run(`UPDATE wheel_axes SET ${col} = ? WHERE id = ?`, [score, id]);
+  db.run(`UPDATE wheel_axes SET ${col} = ? WHERE owner_id = ? AND id = ?`, [score, ownerId, id]);
   saveDb();
 
-  // Return updated axis
-  const stmt = db.prepare('SELECT * FROM wheel_axes WHERE id = ?');
-  stmt.bind([id]);
+  const stmt = db.prepare('SELECT * FROM wheel_axes WHERE owner_id = ? AND id = ?');
+  stmt.bind([ownerId, id]);
   let axis = null;
   if (stmt.step()) {
     const row = stmt.getAsObject() as any;
@@ -98,14 +111,15 @@ router.put('/axis/:id', (req: Request, res: Response) => {
   res.json(axis);
 });
 
-// POST /api/wheel/snapshot — save a snapshot of current scores
-router.post('/snapshot', (_req: Request, res: Response) => {
+router.post('/snapshot', (req: Request, res: Response) => {
   const db = getDb();
+  const ownerId = getOwnerId(req);
+  ensureDefaultAxes(ownerId);
   const today = new Date().toISOString().slice(0, 10);
   const id = crypto.randomUUID();
 
-  // Gather current scores from all axes
-  const axesStmt = db.prepare('SELECT id, current_score FROM wheel_axes');
+  const axesStmt = db.prepare('SELECT id, current_score FROM wheel_axes WHERE owner_id = ?');
+  axesStmt.bind([ownerId]);
   const scores: Record<string, number> = {};
   while (axesStmt.step()) {
     const row = axesStmt.getAsObject() as any;
@@ -114,23 +128,21 @@ router.post('/snapshot', (_req: Request, res: Response) => {
   axesStmt.free();
 
   db.run(
-    'INSERT INTO wheel_snapshots (id, date, scores) VALUES (?, ?, ?)',
-    [id, today, JSON.stringify(scores)]
+    'INSERT INTO wheel_snapshots (id, date, scores, owner_id) VALUES (?, ?, ?, ?)',
+    [id, today, JSON.stringify(scores), ownerId]
   );
   saveDb();
 
   res.json({ id, date: today, scores });
 });
 
-// GET /api/wheel/snapshots — get snapshot history
 router.get('/snapshots', (req: Request, res: Response) => {
   const weeks = parseInt(req.query.weeks as string) || 12;
   const db = getDb();
+  const ownerId = getOwnerId(req);
 
-  const stmt = db.prepare(
-    `SELECT * FROM wheel_snapshots ORDER BY date DESC LIMIT ?`
-  );
-  stmt.bind([weeks]);
+  const stmt = db.prepare('SELECT * FROM wheel_snapshots WHERE owner_id = ? ORDER BY date DESC LIMIT ?');
+  stmt.bind([ownerId, weeks]);
 
   const snapshots: { id: string; date: string; scores: Record<string, number> }[] = [];
   while (stmt.step()) {
@@ -142,14 +154,12 @@ router.get('/snapshots', (req: Request, res: Response) => {
         scores: JSON.parse(row.scores),
       });
     } catch {
-      // skip malformed rows
+      // Skip malformed rows.
     }
   }
   stmt.free();
 
-  // Reverse so oldest first
   snapshots.reverse();
-
   res.json(snapshots);
 });
 

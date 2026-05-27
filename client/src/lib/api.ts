@@ -24,11 +24,40 @@ import type {
 } from '../types';
 
 const BASE = '/api';
+const ACTIVE_IDENTITY_META_KEY = 'activeIdentityId';
+
+let activeGuestId: string | null = null;
+
+async function readActiveGuestIdFromIndexedDb(): Promise<string | null> {
+  if (typeof indexedDB === 'undefined') return null;
+
+  return new Promise(resolve => {
+    const request = indexedDB.open('karma-yoga-local-first', 1);
+    request.onerror = () => resolve(null);
+    request.onsuccess = () => {
+      const db = request.result;
+      const tx = db.transaction('meta', 'readonly');
+      const store = tx.objectStore('meta');
+      const getRequest = store.get(ACTIVE_IDENTITY_META_KEY);
+      getRequest.onsuccess = () => {
+        db.close();
+        resolve(getRequest.result?.value ?? null);
+      };
+      getRequest.onerror = () => {
+        db.close();
+        resolve(null);
+      };
+    };
+  });
+}
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
+  activeGuestId = activeGuestId ?? await readActiveGuestIdFromIndexedDb();
+
   const res = await fetch(`${BASE}${path}`, {
     headers: {
       'Content-Type': 'application/json',
+      ...(activeGuestId ? { 'X-Karma-Guest-ID': activeGuestId } : {}),
       ...(options?.headers ?? {}),
     },
     ...options,
