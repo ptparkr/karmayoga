@@ -70,4 +70,4 @@ Output Directory: client/dist
 Install Command: npm run install:all
 ```
 
-Copy `.env.example` to `.env` for local development. On Vercel, only set variables that differ from the defaults.
+Copy `.env.example` to  `.env` for local development. On Vercel, only set variables that differ from the defaults.
